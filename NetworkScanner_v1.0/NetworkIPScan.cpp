@@ -178,7 +178,6 @@ void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 	default:
 		break;
 	}
-	AfxGetApp()->GetMainWnd()->Invalidate();
 }
 
 

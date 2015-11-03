@@ -209,11 +209,13 @@ void CNetworkScannerDlg::OnBnClickedBtnStopAll()
 void CNetworkScannerDlg::OnBnClickedBtnStopSend()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	m_NetworkIPScan.EndSend();
 }
 
 void CNetworkScannerDlg::OnBnClickedBtnStopRecv()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	m_NetworkIPScan.EndCapture();
 }
 
 // NIC Information 자세히 보기
