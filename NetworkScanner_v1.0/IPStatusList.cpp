@@ -48,11 +48,10 @@ void CIPStatusList::InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ip
 	for (int i = 0; i < index; i++)
 		lh = lh->next;
 
-	int len = 0;
 	IPStatusInfo *temp = new IPStatusInfo;
 	memset(temp, 0, sizeof(IPStatusInfo));
 	// 리스트에 삽입
-	ListAdd(&temp->list, &m_ListHead);
+	ListAdd(&temp->list, lh);
 	// 리스트 사이즈 증가
 	m_ListSize++;
 
@@ -76,6 +75,26 @@ void CIPStatusList::UpdateItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ip
 	temp->IPStatus = ipstat;
 	temp->PingReply = pingreply;
 
+	Unlock();
+}
+
+void CIPStatusList::UpdateItemIPStat(int index, IPSTATUS ipstat)
+{
+	if (Lock(INFINITE))
+		return;
+
+	IPStatusInfo *temp = At(index);
+	temp->IPStatus = ipstat;
+
+	Unlock();
+}
+void CIPStatusList::UpdateItemPingStat(int index, bool pingreply)
+{
+	if (Lock(INFINITE))
+		return;
+
+	IPStatusInfo *temp = At(index);
+	temp->PingReply = pingreply;
 	Unlock();
 }
 

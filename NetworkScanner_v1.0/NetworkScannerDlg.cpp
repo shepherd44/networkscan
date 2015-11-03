@@ -450,12 +450,15 @@ void CNetworkScannerDlg::StartListUpdateThread()
 }
 void CNetworkScannerDlg::EndListUpdateThread()
 {
-	m_IsListUpdateThreadDye = true;
-	// 락상태 풀기
-	m_EventListUpdate.SetEvent();
-	WaitForSingleObject(m_ListUpdateThread->m_hThread, INFINITE);
-	
-	m_ListUpdateThread = NULL;
+	if (m_ListUpdateThread != NULL)
+	{
+		m_IsListUpdateThreadDye = true;
+		// 이벤트 전송 풀기
+		m_EventListUpdate.SetEvent();
+		WaitForSingleObject(m_ListUpdateThread->m_hThread, INFINITE);
+
+		m_ListUpdateThread = NULL;
+	}
 }
 
 
@@ -488,6 +491,10 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 void CNetworkScannerDlg::OnClose()
 {
 	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+	// 쓰레드 중지
+	m_NetworkIPScan.EndSend();
+	m_NetworkIPScan.EndCapture();
 	EndListUpdateThread();
+
 	CDialogEx::OnClose();
 }

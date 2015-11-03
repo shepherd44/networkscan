@@ -73,9 +73,12 @@ void CNetworkIPScan::StartSend()
 
 void CNetworkIPScan::EndSend()
 {
-	m_IsSendThreadDye = TRUE;
-	WaitForSingleObject(m_hSendThread->m_hThread, INFINITE);
-	m_hSendThread = NULL;
+	if (m_hSendThread != NULL)
+	{
+		m_IsSendThreadDye = TRUE;
+		WaitForSingleObject(m_hSendThread->m_hThread, INFINITE);
+		m_hSendThread = NULL;
+	}
 }
 
 // 캡처 결과 분석, icmp, arp만 분석
@@ -103,17 +106,47 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 	CIPStatusList *ipstatlist = (CIPStatusList *)capparam->param_ipstatlist;
 	CWPcapCaptureSocket *capsock = (CWPcapCaptureSocket *)capparam->param_capsock;
 
+	uint32_t myip = capsock->GetCurrentSelectNICInfo()->NICIPAddress;
 	ARPPacket *arpp = (ARPPacket *)(packet + ETHERNETHEADER_LENGTH);
-	uint32_t ip;
+	uint32_t dstip, senderip;
+	int index;
+	uint8_t mac[MACADDRESS_LENGTH] = { 0, };
+
+	// 범위 내의 ip인지 확인
+	memcpy(&senderip, arpp->spaddr, IPV4ADDRESS_LENGTH);
+	index = ipstatlist->IsInItem(senderip);
+	if (index == -1)
+		return;
+
 	switch (ntohs(arpp->opcode))
 	{
 	case ARPOPCODE::ARPREQUEST:
-		memcpy(&ip, arpp->spaddr, IPV4ADDRESS_LENGTH);
-		if (ip == capsock->GetCurrentSelectNICInfo()->NICIPAddress)
+		if (senderip == myip)
 			break;
 		break;
 	case ARPOPCODE::ARPREPLY:
-
+		memcpy(&dstip, arpp->dpaddr, IPV4ADDRESS_LENGTH);
+		if (dstip == myip)
+		{
+			memcpy(mac, arpp->shaddr, MACADDRESS_LENGTH);
+			
+			index = ipstatlist->IsInItem(senderip);
+			IPStatusInfo *temp = ipstatlist->At(index);
+			switch (temp->IPStatus)
+			{
+			case IPSTATUS::NOTUSING:
+				ipstatlist->UpdateItem(index, senderip, mac, USING, TRUE);
+				break;
+			case IPSTATUS::USING:
+			case IPSTATUS::USING_GATEWAY:
+			case IPSTATUS::IPDUPLICATION:
+				ipstatlist->UpdateItemIPStat(index, IPDUPLICATION);
+				ipstatlist->InsertItem(index, senderip, mac, IPDUPLICATION, FALSE);
+				break;
+			default:
+				break;
+			}
+		}
 		break;
 	default:
 		break;
@@ -145,6 +178,7 @@ void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 	default:
 		break;
 	}
+	AfxGetApp()->GetMainWnd()->Invalidate();
 }
 
 
@@ -183,7 +217,10 @@ void CNetworkIPScan::StartCapture()
 void CNetworkIPScan::EndCapture()
 {
 	// 종료 신호 보내기
-	m_CaptureSock.EndCapture();
-	WaitForSingleObject(m_hCaptureThread->m_hThread, INFINITE);
-	m_hCaptureThread = NULL;
+	if (m_hCaptureThread != NULL)
+	{
+		m_CaptureSock.EndCapture();
+		WaitForSingleObject(m_hCaptureThread->m_hThread, INFINITE);
+		m_hCaptureThread = NULL;
+	}
 }
