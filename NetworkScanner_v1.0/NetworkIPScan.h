@@ -1,6 +1,5 @@
 #pragma once
 
-#include "NetworkScannerDlg.h"
 #include "capturesocket.h"
 #include "sendsocket.h"
 #include "IPStatusList.h"

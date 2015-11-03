@@ -52,7 +52,6 @@ enum SCANNIG_STATE
 	SCANNING_STATE_END	// END
 };
 
-typedef void(*ListCtrlUpdate)();
 // CNetworkScannerDlg 대화 상자
 class CNetworkScannerDlg : public CDialogEx
 {
