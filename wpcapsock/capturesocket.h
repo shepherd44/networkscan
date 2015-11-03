@@ -10,6 +10,12 @@
 
 typedef void(*capture_handler)(const u_char *, const u_char *);
 
+struct PCapLoopParam
+{
+	bool *param_stop;
+	pcap_t *param_pcaphandle;
+};
+
 class CWPcapCaptureSocket : public CWPcapSocket
 {
 #ifdef _DEBUG

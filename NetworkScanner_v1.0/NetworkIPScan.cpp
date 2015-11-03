@@ -94,6 +94,7 @@ void CNetworkIPScan::Analyze(const uint8_t *param, const uint8_t *packet)
 	default:
 		break;
 	}
+
 }
 void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 {
@@ -102,6 +103,21 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 	CIPStatusList *ipstatlist = (CIPStatusList *)capparam->param_ipstatlist;
 	CWPcapCaptureSocket *capsock = (CWPcapCaptureSocket *)capparam->param_capsock;
 
+	ARPPacket *arpp = (ARPPacket *)(packet + ETHERNETHEADER_LENGTH);
+	uint32_t ip;
+	switch (ntohs(arpp->opcode))
+	{
+	case ARPOPCODE::ARPREQUEST:
+		memcpy(&ip, arpp->spaddr, IPV4ADDRESS_LENGTH);
+		if (ip == capsock->GetCurrentSelectNICInfo()->NICIPAddress)
+			break;
+		break;
+	case ARPOPCODE::ARPREPLY:
+
+		break;
+	default:
+		break;
+	}
 }
 
 void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)

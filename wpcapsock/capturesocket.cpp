@@ -3,6 +3,8 @@
 CWPcapCaptureSocket::CWPcapCaptureSocket() : CWPcapSocket()
 {
 	m_IsCapture = false;
+	memset(&m_FilterCode, 0, sizeof(bpf_program));
+	m_FilterCode.bf_len = -1;
 }
 CWPcapCaptureSocket::~CWPcapCaptureSocket()
 {
@@ -17,9 +19,12 @@ void CWPcapCaptureSocket::CreatePacketFilter(const char* filter)
 // pcap_loop 버전
 void CWPcapCaptureSocket::StartCapture(pcap_handler handler, int pckcnt)
 {
+	static struct PCapLoopParam param;
 	m_IsCapture = true;
 	pcap_setfilter(m_pCapHandler, &m_FilterCode);
-	pcap_loop(m_pCapHandler, pckcnt, CWPcapCaptureSocket::PrintPacket, NULL);
+	param.param_stop = &m_IsCapture;
+	param.param_pcaphandle = m_pCapHandler;
+	pcap_loop(m_pCapHandler, pckcnt, CWPcapCaptureSocket::PrintPacket, (u_char *)&param);
 }
 
 // pcap_next 무한 루프 버전
@@ -43,14 +48,16 @@ void CWPcapCaptureSocket::StartCapture(capture_handler handler, uint8_t *param, 
 
 void CWPcapCaptureSocket::EndCapture()
 {
-	m_IsCapture = true;
-	pcap_breakloop(m_pCapHandler);
-	pcap_freecode(&m_FilterCode);
+	m_IsCapture = false;
+	if (m_FilterCode.bf_len != -1)
+		pcap_freecode(&m_FilterCode);
 }
 
 void CWPcapCaptureSocket::PrintPacket(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data)
 {
-	(param);
+	struct PCapLoopParam *capparam = (struct PCapLoopParam *)param;
+	if (*capparam->param_stop)
+		pcap_breakloop(capparam->param_pcaphandle);
 	ETHHeader *ethh = (ETHHeader *)pkt_data;
 	PIPV4Header iph;
 	printf("-------------------------------------------\n");
@@ -90,4 +97,5 @@ void CWPcapCaptureSocket::PrintPacket(u_char *param, const struct pcap_pkthdr *h
 		printf("protocol type: OTHER\n");
 		break;
 	}
+	
 }

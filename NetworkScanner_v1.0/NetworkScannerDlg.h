@@ -130,4 +130,5 @@ public:
 	// NIC 선택용 콤보 박스
 	void ComboBoxInit();
 
+	afx_msg void OnClose();
 };

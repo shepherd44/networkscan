@@ -73,6 +73,7 @@ BEGIN_MESSAGE_MAP(CNetworkScannerDlg, CDialogEx)
 	ON_BN_CLICKED(ID_BTN_NICDETAIL, &CNetworkScannerDlg::OnBnClickedBtnNicdetail)
 	ON_BN_CLICKED(ID_BTN_SCAN_ADDIP, &CNetworkScannerDlg::OnBnClickedBtnScanAddip)
 	ON_BN_CLICKED(ID_BTN_SCAN_REMOVEIP, &CNetworkScannerDlg::OnBnClickedBtnScanRemoveip)
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
@@ -450,6 +451,8 @@ void CNetworkScannerDlg::StartListUpdateThread()
 void CNetworkScannerDlg::EndListUpdateThread()
 {
 	m_IsListUpdateThreadDye = true;
+	// 락상태 풀기
+	m_EventListUpdate.SetEvent();
 	WaitForSingleObject(m_ListUpdateThread->m_hThread, INFINITE);
 	
 	m_ListUpdateThread = NULL;
@@ -463,6 +466,10 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 	while (1)
 	{
 		maindlg->m_EventListUpdate.Lock();
+		// 종료 메시지 확인
+		if (*isdye)
+			break;
+
 		maindlg->ListCtrlDeleteAll();
 		CIPStatusList *iplist = (maindlg->m_NetworkIPScan.GetIpStatusList());
 		int size = iplist->GetSize();
@@ -473,8 +480,14 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 		}
 
 		// 쓰레드 종료 확인
-		if (isdye)
-			break;
+		
 	}
 	return 0;
+}
+
+void CNetworkScannerDlg::OnClose()
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+	EndListUpdateThread();
+	CDialogEx::OnClose();
 }

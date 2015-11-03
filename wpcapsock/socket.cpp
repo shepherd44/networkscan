@@ -126,10 +126,8 @@ void CWPcapSocket::CloseNetDevice()
 
 int CWPcapSocket::GetNicNumber() { return m_NICInfoList.GetSize(); }
 const char* CWPcapSocket::GetErrorBuffer() { return m_ErrBuffer; }
-int CWPcapSocket::GetCurrentSelectNIC()
-{
-	return m_CurSel; 
-}
+int CWPcapSocket::GetCurrentSelectNICNum() { return m_CurSel; }
+const NICInfo* CWPcapSocket::GetCurrentSelectNICInfo() { return m_NICInfoList.At(m_CurSel); }
 char *CWPcapSocket::GetCurrentSelectNICName()
 {
 	if (m_CurSel == -1)

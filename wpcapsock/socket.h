@@ -18,7 +18,6 @@
 
 #define PROMISCUOUS_MODE	65536
 #define NICNAME_OFFSET		12
-#define NICPRENAME			"\\Device\\NPF_"
 
 class CWPcapSocket
 {
@@ -53,7 +52,8 @@ public:
 
 	// NIC °¹¼ö ¹ÝÈ¯
 	int GetNicNumber();
-	int GetCurrentSelectNIC();
+	int GetCurrentSelectNICNum();
+	const NICInfo *GetCurrentSelectNICInfo();
 	char *GetCurrentSelectNICName();
 	const char* GetErrorBuffer();
 	void GetNICInfo();
