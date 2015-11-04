@@ -62,12 +62,14 @@ int CWPcapSendSocket::SetETHHeaderWithARP(uint8_t *packet, uint8_t *src, uint16_
 	}// 외부일 경우 ARP 테이블에서 게이트웨이 맥주소 가져온다
 	else
 	{
+		// 게이트웨이 맥주소 확인
 		for (; i < pMib->dwNumEntries; i++)
 		{
 			if (pMib->table[i].dwAddr == m_NICInfoList.At(m_CurSel)->GatewayIPAddress)
 			{
 				memcpy(dstmac, pMib->table[i].bPhysAddr, pMib->table[i].dwPhysAddrLen);
-				break;
+				SetETHHeader(packet, dstmac, m_NICInfoList.At(m_CurSel)->NICMACAddress, prototype);
+				return 0;
 			}
 		}
 		return -1;

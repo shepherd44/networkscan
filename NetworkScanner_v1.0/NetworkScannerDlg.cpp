@@ -369,6 +369,18 @@ void CNetworkScannerDlg::ListCtrlDeleteAll()
 {
 	m_ListCtrlScanResult.DeleteAllItems();
 }
+
+void CNetworkScannerDlg::ListCtrlDeleteAndInsert()
+{
+	CIPStatusList *iplist = m_NetworkIPScan.GetIpStatusList();
+	ListCtrlDeleteAll();
+	int size = iplist->GetSize();
+
+	for (int i = 0; i < size; i++)
+	{
+		ListCtrlInsertData(iplist->At(i));
+	}
+}
 // IP 입력 컨트롤 초기화
 void CNetworkScannerDlg::ListCtrlInsertData(IPStatusInfo *item)
 {

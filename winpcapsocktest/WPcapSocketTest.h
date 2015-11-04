@@ -110,15 +110,13 @@ public:
 TEST_F(CWPcapSocketTest, SendSocket_SetICMPV4ECHO)
 {
 	m_sendsock.OpenNetDevice(0);
-	uint32_t dst = inet_addr("172.16.4.89");
-	while (1)
+	uint32_t dst = inet_addr("172.16.5.201");
+	//while (1)
 	{
 		m_sendsock.SendICMPV4ECHORequest(dst);
 		//m_sendsock.SendPingInWin(dst);
 		Sleep(1000);
 	}
-	m_sendsock.SendICMPV4ECHORequest(dst);
-	//m_sendsock.SendPingInWin(dst);
 }
 
 //void PrintPacket(const u_char *param, const u_char *pkt_data)

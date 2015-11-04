@@ -103,6 +103,7 @@ public:
 	afx_msg void OnListIPStatusCustomdraw(NMHDR* pNMHDR, LRESULT* pResult);
 	void ListCtrlInit();
 	void ListCtrlDeleteAll();
+	void ListCtrlDeleteAndInsert();
 	void ListCtrlInsertData(IPStatusInfo *item);
 	void ListCtrlUpdateData(int index, IPStatusInfo *item);
 	int *GetCheckedItem();

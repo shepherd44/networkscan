@@ -46,17 +46,23 @@ public:
 	int SendARP(u_long beginip, u_long end_ip);
 
 	// 패킷 캡쳐 함수
-	static UINT AFX_CDECL CaptureThreadFunc(LPVOID lpParam);	// 패킷 캡처 스레드 함수
-	void StartCapture();	// 캡처 시작
-	void EndCapture();		// 캡처 종료
+	// @ lpParam: 스레드 파라미터 전송
+	static UINT AFX_CDECL CaptureThreadFunc(LPVOID lpParam);
+	// 패킷 캡처 시작
+	void StartCapture();	
+	// 패킷 캡처 종료
+	void EndCapture();		
 	// 캡처 결과 분석, icmp, arp만 분석
 	// WPcapCaptureSocket.StartCapture의 콜백함수로 들어감
 	static void Analyze(const uint8_t *param, const uint8_t *packet);
 	static void IPAnalyze(const uint8_t *param, const uint8_t *packet);		// IP 분석
 	static void ARPAnalyze(const uint8_t *param, const uint8_t *packet);	// ARP 분석
 
-	static UINT AFX_CDECL SendThreadFunc(LPVOID lpParam);		// 패킷 센드 스레드 함수
+	// 패킷 전송 스레드 함수
+	static UINT AFX_CDECL SendThreadFunc(LPVOID lpParam);
+	// 패킷 전송 시작
 	void StartSend();
+	// 패킷 전송 종료
 	void EndSend();
 
 	// NIC 정보 리스트 가져오기

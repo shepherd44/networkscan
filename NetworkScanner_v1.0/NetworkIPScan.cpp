@@ -226,6 +226,7 @@ void CNetworkIPScan::StartCapture()
 	
 	if (m_hCaptureThread == NULL)
 	{
+		// 파라미터 셋팅
 		memset(&capparam, 0, sizeof(struct ThreadParams));
 		capparam.socket = &m_CaptureSock;
 		capparam.list = &m_IPStatInfoList;
@@ -234,9 +235,7 @@ void CNetworkIPScan::StartCapture()
 		m_hCaptureThread = AfxBeginThread(CaptureThreadFunc, &capparam, 0, 0, 0);
 	}
 	else
-	{
 		throw std::exception("capture thread 생성 실패");
-	}
 
 	if (m_hCaptureThread == NULL)
 		throw std::exception("스레드 시작 실패");
@@ -256,11 +255,41 @@ void CNetworkIPScan::EndCapture()
 
 void CNetworkIPScan::IPStatusListInsertItem(IPStatusInfo *ipstatinfo, uint32_t hbeginip, uint32_t hendip)
 {
-
-	/*for (; hbeginip <= hendip; hbeginip++)
+	/*CNetworkScannerDlg *maindlg = (CNetworkScannerDlg *)AfxGetApp()->GetMainWnd();
+	IPStatusInfo *item;
+	int size = m_IPStatInfoList.GetSize();
+	int index;
+	int binary;
+	int nip;
+	for (; hbeginip <= hendip; hbeginip++)
 	{
+		nip = htonl(hbeginip);
+		index = size / 2;
+		binary = size / 2;
+		while (1)
+		{
+			item = m_IPStatInfoList.At(index);
+			if (item->IPAddress == nip)
+				break;
+			binary = binary / 2;
+			if (binary)
+
+			if (item->IPAddress < nip)
+			{
+				index = index - binary;
+			}
+			else
+			{
+				index = index + binary;
+			}
+			
+			if (index / 2)
+		}
+		
+
 		int index = m_IPStatInfoList.IsInItem(htonl(hbeginip));
 		if (index == -1)
 			m_IPStatInfoList->InsertItem(htonl(hbeginip), mac, IPSTATUS::NOTUSING, false);
-	}*/
+	}
+	maindlg->ListCtrlDeleteAndInsert();*/
 }
