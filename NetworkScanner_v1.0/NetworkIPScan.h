@@ -10,18 +10,13 @@
 #endif
 
 // 캡처 스레드 파라미터
-struct CaptureParam
-{
-	CWPcapCaptureSocket *param_capsock;
-	CIPStatusList *param_ipstatlist;
-};
 
 // 파라미터 3개 구조체
-struct Params
+struct ThreadParams
 {
-	void *param1;
-	void *param2;
-	void *param3;
+	void *socket;
+	void *list;
+	void *isend;
 };
 
 class CNetworkIPScan

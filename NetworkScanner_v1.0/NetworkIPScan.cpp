@@ -37,9 +37,9 @@ void CNetworkIPScan::Scan(int nicindex)
 UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 {
 	CNetworkScannerDlg *maindlg = (CNetworkScannerDlg *)(AfxGetApp()->GetMainWnd());
-	CWPcapSendSocket *sendsock = (CWPcapSendSocket *)((struct Params*)lpParam)->param1;
-	bool *isdye = (bool *)((struct Params*)lpParam)->param2;
-	CIPStatusList *iplist = (CIPStatusList *)((struct Params*)lpParam)->param3;
+	CWPcapSendSocket *sendsock = (CWPcapSendSocket *)((struct ThreadParams*)lpParam)->socket;
+	bool *isdye = (bool *)((struct ThreadParams*)lpParam)->isend;
+	CIPStatusList *iplist = (CIPStatusList *)((struct ThreadParams*)lpParam)->list;
 	// 스레드 종료 확인
 	if (*isdye)
 		return 0;
@@ -69,13 +69,13 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 }
 void CNetworkIPScan::StartSend()
 {
-	static struct Params sendparam;
+	static struct ThreadParams sendparam;
 	if (m_hSendThread == NULL)
 	{
-		memset(&sendparam, 0, sizeof(struct Params));
-		sendparam.param1 = &m_SendSock;
-		sendparam.param2 = &m_IsSendThreadDye;
-		sendparam.param3 = &m_IPStatInfoList;
+		memset(&sendparam, 0, sizeof(struct ThreadParams));
+		sendparam.socket = &m_SendSock;
+		sendparam.isend = &m_IsSendThreadDye;
+		sendparam.list = &m_IPStatInfoList;
 		m_IsSendThreadDye = FALSE;
 		m_hSendThread = AfxBeginThread(SendThreadFunc, &sendparam, 0, 0, 0);
 	}
@@ -119,9 +119,9 @@ void CNetworkIPScan::Analyze(const uint8_t *param, const uint8_t *packet)
 void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 {
 	// 파라미터 변환
-	struct CaptureParam *capparam = (struct CaptureParam *)param;
-	CIPStatusList *ipstatlist = (CIPStatusList *)capparam->param_ipstatlist;
-	CWPcapCaptureSocket *capsock = (CWPcapCaptureSocket *)capparam->param_capsock;
+	struct ThreadParams *capparam = (struct ThreadParams *)param;
+	CIPStatusList *ipstatlist = (CIPStatusList *)capparam->list;
+	CWPcapCaptureSocket *capsock = (CWPcapCaptureSocket *)capparam->socket;
 
 	uint32_t myip = capsock->GetCurrentSelectNICInfo()->NICIPAddress;
 	ARPPacket *arpp = (ARPPacket *)(packet + ETHERNETHEADER_LENGTH);
@@ -180,9 +180,9 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 {
 	// 파라미터 변환
-	struct CaptureParam *capparam = (struct CaptureParam *)param;
-	CIPStatusList *ipstatlist = (CIPStatusList *)capparam->param_ipstatlist;
-	CWPcapCaptureSocket *capsock = (CWPcapCaptureSocket *)capparam->param_capsock;
+	struct ThreadParams *capparam = (struct ThreadParams *)param;
+	CIPStatusList *ipstatlist = (CIPStatusList *)capparam->list;
+	CWPcapCaptureSocket *capsock = (CWPcapCaptureSocket *)capparam->socket;
 
 	IPV4Header *iph = (IPV4Header *)(packet + ETHERNETHEADER_LENGTH);
 	uint32_t ip;
@@ -211,8 +211,8 @@ void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 // 쓰레드용 캡처 시작 함수 
 UINT AFX_CDECL CNetworkIPScan::CaptureThreadFunc(LPVOID lpParam)
 {
-	struct CaptureParam *capparam = (struct CaptureParam *)lpParam;
-	CWPcapCaptureSocket *capsock = capparam->param_capsock;
+	struct ThreadParams *capparam = (struct ThreadParams *)lpParam;
+	CWPcapCaptureSocket *capsock = (CWPcapCaptureSocket *)capparam->socket;
 	capsock->StartCapture(Analyze, (uint8_t *)lpParam, 0, 0);
 	return 0;
 }
@@ -222,14 +222,13 @@ UINT AFX_CDECL CNetworkIPScan::CaptureThreadFunc(LPVOID lpParam)
 void CNetworkIPScan::StartCapture()
 {
 	// 캡쳐 스레드 파라미터
-	static struct CaptureParam capparam;
+	static struct ThreadParams capparam;
 	
 	if (m_hCaptureThread == NULL)
 	{
-		memset(&capparam, 0, sizeof(struct CaptureParam));
-		capparam.param_capsock = &m_CaptureSock;
-		capparam.param_ipstatlist = &m_IPStatInfoList;
-		
+		memset(&capparam, 0, sizeof(struct ThreadParams));
+		capparam.socket = &m_CaptureSock;
+		capparam.list = &m_IPStatInfoList;
 
 		// 캡쳐 스레드 시작
 		m_hCaptureThread = AfxBeginThread(CaptureThreadFunc, &capparam, 0, 0, 0);
