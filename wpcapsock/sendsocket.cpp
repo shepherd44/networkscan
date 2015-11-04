@@ -215,38 +215,11 @@ void CWPcapSendSocket::SendPingInWin(uint32_t dstip)
 	if (ReplyBuffer == NULL)
 	return ;
 
-
 	dwRetVal = IcmpSendEcho(hIcmpFile, dstip, SendData, sizeof(SendData),
-	NULL, ReplyBuffer, ReplySize, 1000);
-	if (dwRetVal != 0)
-	{
-		PICMP_ECHO_REPLY pEchoReply = (PICMP_ECHO_REPLY)ReplyBuffer;
-		struct in_addr ReplyAddr;
-		ReplyAddr.S_un.S_addr = pEchoReply->Address;
+	NULL, ReplyBuffer, ReplySize, 100);
 
-		if (dwRetVal > 1)
-		{
-			printf("\tReceived %ld icmp message responses\n", dwRetVal);
-			printf("\tInformation from the first response:\n");
-		}
-		else 
-		{
-			printf("\tReceived %ld icmp message response\n", dwRetVal);
-			printf("\tInformation from this response:\n");
-		}
-
-		printf("\t  Received from %s\n", inet_ntoa(ReplyAddr));
-		printf("\t  Status = %ld\n",
-		pEchoReply->Status);
-		printf("\t  Roundtrip time = %ld milliseconds\n",
-		pEchoReply->RoundTripTime);
-	}
-	else
-	{
-		printf("\tCall to IcmpSendEcho failed.\n");
-		printf("\tIcmpSendEcho returned error: %ld\n", GetLastError());
-		return ;
-	}
+	//CloseHandle(hIcmpFile);
+	free(ReplyBuffer);
 }
 
 void CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)

@@ -39,7 +39,7 @@ void CIPStatusList::AddItem(uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pin
 
 void CIPStatusList::InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply)
 {
-	if (Lock(INFINITE))
+	if (!Lock(INFINITE))
 		return;
 
 	if (index >= m_ListSize)
@@ -66,7 +66,7 @@ void CIPStatusList::InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ip
 
 void CIPStatusList::UpdateItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply)
 {
-	if (Lock(INFINITE))
+	if (!Lock(INFINITE))
 		return;
 
 	IPStatusInfo *temp = At(index);
@@ -77,10 +77,21 @@ void CIPStatusList::UpdateItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ip
 
 	Unlock();
 }
+void CIPStatusList::UpdateItemARPInfo(int index, uint8_t *mac, IPSTATUS ipstat)
+{
+	if (!Lock(INFINITE))
+		return;
+
+	IPStatusInfo *temp = At(index);
+	memcpy(temp->MACAddress, mac, 6);
+	temp->IPStatus = ipstat;
+
+	Unlock();
+}
 
 void CIPStatusList::UpdateItemIPStat(int index, IPSTATUS ipstat)
 {
-	if (Lock(INFINITE))
+	if (!Lock(INFINITE))
 		return;
 
 	IPStatusInfo *temp = At(index);
@@ -88,12 +99,13 @@ void CIPStatusList::UpdateItemIPStat(int index, IPSTATUS ipstat)
 
 	Unlock();
 }
-void CIPStatusList::UpdateItemPingStat(int index, bool pingreply)
+void CIPStatusList::UpdateItemPingStat(int index, IPSTATUS ipstat, bool pingreply)
 {
-	if (Lock(INFINITE))
+	if (!Lock(INFINITE))
 		return;
 
 	IPStatusInfo *temp = At(index);
+	temp->IPStatus = ipstat;
 	temp->PingReply = pingreply;
 	Unlock();
 }
@@ -116,7 +128,7 @@ int CIPStatusList::IsInItem(uint32_t ip)
 // 아이템 삭제
 void CIPStatusList::RemoveItem(PListHead ph)
 {
-	if (Lock(INFINITE))
+	if (!Lock(INFINITE))
 		return;
 	ListDelete(ph);
 	IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
@@ -127,7 +139,7 @@ void CIPStatusList::RemoveItem(PListHead ph)
 
 void CIPStatusList::ClearList()
 {
-	if (Lock(INFINITE))
+	if (!Lock(INFINITE))
 		return;
 	PListHead ph = m_ListHead.next;
 	for (; ph != &m_ListHead; ph = m_ListHead.next)

@@ -35,8 +35,9 @@ public:
 	void AddItem(uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
 	void InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
 	void UpdateItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
+	void UpdateItemARPInfo(int index, uint8_t *mac, IPSTATUS ipstat);
 	void UpdateItemIPStat(int index, IPSTATUS ipstat);
-	void UpdateItemPingStat(int index, bool pingreply);
+	void UpdateItemPingStat(int index, IPSTATUS ipstat, bool pingreply);
 
 	int IsInItem(uint32_t ip);
 	void RemoveItem(PListHead ph);

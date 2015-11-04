@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "NetworkIPScan.h"
 
-
 CNetworkIPScan::CNetworkIPScan()
 {
 	InitializeAll();
@@ -23,10 +22,6 @@ void CNetworkIPScan::InitializeAll()
 // 스캔 시작
 void CNetworkIPScan::Scan(int nicindex)
 {
-	// ip 리스트
-
-	// ip 
-
 	// socket open
 	m_SendSock.OpenNetDevice(nicindex);
 	m_CaptureSock.OpenNetDevice(m_SendSock.GetCurrentSelectNICName());
@@ -43,24 +38,46 @@ void CNetworkIPScan::Scan(int nicindex)
 // 패킷 전송 스레드 함수
 UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 {
-	bool *isdye = (bool *)lpParam;
-	while (1)
+	CWPcapSendSocket *sendsock = (CWPcapSendSocket *)((struct Params*)lpParam)->param1;
+	bool *isdye = (bool *)((struct Params*)lpParam)->param2;
+	CIPStatusList *iplist = (CIPStatusList *)((struct Params*)lpParam)->param3;
+	// 스레드 종료 확인
+	if (*isdye)
+		return 0;
+	int size = iplist->GetSize();
+	int i = 0;
+	for (; i < size; i++)
 	{
-		
-		// 스레드 종료 확인
 		if (*isdye)
-			break;
+			return 0;
+		sendsock->SendARPRequest(iplist->At(i)->IPAddress);
 	}
+	
+
+	for (i = 0; i < size; i++)
+	{
+		if (*isdye)
+			return 0;
+		sendsock->SendPingInWin(iplist->At(i)->IPAddress);
+	}
+	
+	CNetworkScannerDlg *maindlg = (CNetworkScannerDlg *)(AfxGetApp()->GetMainWnd());
+	maindlg->ListCtrlUpdate();
+	
 	return 0;
 }
 
 void CNetworkIPScan::StartSend()
 {
+	static struct Params sendparam;
 	if (m_hSendThread == NULL)
 	{
+		memset(&sendparam, 0, sizeof(struct Params));
+		sendparam.param1 = &m_SendSock;
+		sendparam.param2 = &m_IsSendThreadDye;
+		sendparam.param3 = &m_IPStatInfoList;
 		m_IsSendThreadDye = FALSE;
-		LPVOID param = &m_IsSendThreadDye;
-		m_hSendThread = AfxBeginThread(SendThreadFunc, param, 0, 0, 0);
+		m_hSendThread = AfxBeginThread(SendThreadFunc, &sendparam, 0, 0, 0);
 	}
 	else
 	{
@@ -97,7 +114,8 @@ void CNetworkIPScan::Analyze(const uint8_t *param, const uint8_t *packet)
 	default:
 		break;
 	}
-
+	
+	
 }
 void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 {
@@ -118,6 +136,7 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 	if (index == -1)
 		return;
 
+	// 패킷 분석
 	switch (ntohs(arpp->opcode))
 	{
 	case ARPOPCODE::ARPREQUEST:
@@ -135,13 +154,20 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 			switch (temp->IPStatus)
 			{
 			case IPSTATUS::NOTUSING:
-				ipstatlist->UpdateItem(index, senderip, mac, USING, TRUE);
+				ipstatlist->UpdateItemARPInfo(index, mac, USING);
 				break;
 			case IPSTATUS::USING:
 			case IPSTATUS::USING_GATEWAY:
 			case IPSTATUS::IPDUPLICATION:
-				ipstatlist->UpdateItemIPStat(index, IPDUPLICATION);
-				ipstatlist->InsertItem(index, senderip, mac, IPDUPLICATION, FALSE);
+				if (strncmp((char*)temp->MACAddress, (char*)mac, 6) == 0)
+				{
+					break;
+				}
+				else
+				{
+					ipstatlist->UpdateItemIPStat(index, IPDUPLICATION);
+					ipstatlist->InsertItem(index, senderip, mac, IPDUPLICATION, FALSE);
+				}
 				break;
 			default:
 				break;
@@ -172,7 +198,11 @@ void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 		index = ipstatlist->IsInItem(ip);
 		if (index != -1)
 		{
-			ipstatlist->UpdateItem(index, ip, mac, USING, TRUE);
+			IPSTATUS status = ipstatlist->At(index)->IPStatus;
+			if (status == IPSTATUS::NOTUSING)
+				ipstatlist->UpdateItemPingStat(index, IPSTATUS::USING, TRUE);
+			else
+				ipstatlist->UpdateItemPingStat(index, status, TRUE);
 		}
 		break;
 	default:

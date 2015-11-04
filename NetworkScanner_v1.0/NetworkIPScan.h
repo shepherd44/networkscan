@@ -15,6 +15,13 @@ struct CaptureParam
 	CIPStatusList *param_ipstatlist;
 };
 
+struct Params
+{
+	void *param1;
+	void *param2;
+	void *param3;
+};
+
 class CNetworkIPScan
 {
 private:

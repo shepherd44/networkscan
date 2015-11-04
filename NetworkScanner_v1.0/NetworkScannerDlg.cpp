@@ -3,8 +3,8 @@
 //
 
 #include "stdafx.h"
-#include "NetworkScanner.h"
-#include "NetworkScannerDlg.h"
+//#include "NetworkScanner.h"
+//#include "NetworkScannerDlg.h"
 #include "afxdialogex.h"
 
 #ifdef _DEBUG
@@ -73,6 +73,7 @@ BEGIN_MESSAGE_MAP(CNetworkScannerDlg, CDialogEx)
 	ON_BN_CLICKED(ID_BTN_NICDETAIL, &CNetworkScannerDlg::OnBnClickedBtnNicdetail)
 	ON_BN_CLICKED(ID_BTN_SCAN_ADDIP, &CNetworkScannerDlg::OnBnClickedBtnScanAddip)
 	ON_BN_CLICKED(ID_BTN_SCAN_REMOVEIP, &CNetworkScannerDlg::OnBnClickedBtnScanRemoveip)
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_LIST_SCANRESULT, CNetworkScannerDlg::OnListIPStatusCustomdraw)
 	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
@@ -481,6 +482,8 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 
 		for (int i = 0; i < size; i++)
 		{
+			if (*isdye)
+				break;
 			maindlg->ListCtrlInsertData(iplist->At(i));
 		}
 
