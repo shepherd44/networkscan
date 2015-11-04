@@ -132,21 +132,31 @@ int CWPcapSendSocket::GetDstMAC(uint8_t *dstmac, uint32_t dstip, int timeout)
 {
 	ARPPacket *arpp;
 	pcap_pkthdr pkthdr;
-	uint8_t *packet;
+	uint8_t *packet = NULL;
 	SYSTEMTIME systime;
-	GetSystemTime(&systime);
 
-	uint16_t time = systime.wMilliseconds + systime.wSecond << 8 + systime.wMinute << 16;
+	// timeout 확인용 변수
+	GetSystemTime(&systime);
+	uint32_t starttime = systime.wMilliseconds + systime.wSecond * 1000;
+	uint32_t endtime;
 
 	// ARP 요청을 보낸 뒤 확인
-	for (int n = 0; n < 3; n++)
+	for (int n = 0; n < 5; n++)
 	{
 		// ARP 요청
 		SendARPRequest(dstip);
-		// 패킷 확인
+		// 패킷 확인, 100개정도 확인하고 다시 시도
 		for (int i = 0; i < 100; i++)
 		{
+			// timeout 확인
+			GetSystemTime(&systime);
+			endtime = systime.wMilliseconds + systime.wSecond * 1000;
+			if (endtime - starttime > timeout)
+				return -1;
+			// 응답 패킷 확인
 			packet = (uint8_t*)pcap_next(m_pCapHandler, &pkthdr);
+			if (packet == NULL)
+				continue;
 			uint16_t op;
 			memcpy(&op, packet + MACADDRESS_LENGTH * 2, 2);
 			if (op == htons(ETHTYPE::ARP))
