@@ -31,7 +31,7 @@ int CWPcapSendSocket::SetETHHeaderWithARP(uint8_t *packet, uint8_t *src, uint16_
 	memset(dstmac, 0, MACADDRESS_LENGTH);
 
 	// 내부 네트워크인지 확인
-	int i = 0;
+	DWORD i = 0;
 	if (IsInNet(dstip))		
 	{
 		// 내부일 경우 ARP 테이블 확인
@@ -128,7 +128,7 @@ int CWPcapSendSocket::SendARPRequest(uint32_t dstip)
 
 	return ret;
 }
-int CWPcapSendSocket::GetDstMAC(uint8_t *dstmac, uint32_t dstip, int timeout)
+int CWPcapSendSocket::GetDstMAC(uint8_t *dstmac, uint32_t dstip, uint32_t timeout)
 {
 	ARPPacket *arpp;
 	pcap_pkthdr pkthdr;

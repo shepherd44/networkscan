@@ -134,5 +134,5 @@ char *CWPcapSocket::GetCurrentSelectNICName()
 	if (m_CurSel == -1)
 		return NULL;
 	else
-		return m_NICInfoList.At(m_CurSel)->AdapterName; 
+		return m_NICInfoList.At(m_CurSel)->AdapterName;
 }

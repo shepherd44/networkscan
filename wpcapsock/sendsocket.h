@@ -33,7 +33,7 @@ public:
 	// @ dstmac: 목적지 MAC 주소를 반환 받을 버퍼
 	// @ dstip: MAC 주소를 얻을 목적지 주소
 	// @ return: 성공 시 0, 실패 시 -1 반환
-	int GetDstMAC(uint8_t *dstmac, uint32_t dstip, int timeout);
+	int GetDstMAC(uint8_t *dstmac, uint32_t dstip, uint32_t timeout);
 
 	// ARP 요청 메시지 작성
 	// @ out: 패킷 작성할 위치
