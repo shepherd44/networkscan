@@ -106,61 +106,66 @@ public:
 //	int ret = m_sendsock.GetDstMAC(mac, ip);
 //	ASSERT_EQ(0, ret);
 //}
-//
-//TEST_F(CWPcapSocketTest, SendSocket_SetICMPV4ECHO)
-//{
-//	m_sendsock.OpenNetDevice(0);
-//	uint32_t dst = inet_addr("172.16.5.100");
-//	m_sendsock.SendICMPV4ECHORequest(dst);
-//	m_sendsock.SendPingInWin(dst);
-//}
 
-void PrintPacket(const u_char *param, const u_char *pkt_data)
+TEST_F(CWPcapSocketTest, SendSocket_SetICMPV4ECHO)
 {
-	(param);
-	ETHHeader *ethh = (ETHHeader *)pkt_data;
-	PIPV4Header iph;
-	printf("-------------------------------------------\n");
-	printf("dstMAC: %02X:%02X:%02X:%02X:%02X:%02X:\n", ethh->dstmac[0], ethh->dstmac[1], ethh->dstmac[2],
-		ethh->dstmac[3], ethh->dstmac[4], ethh->dstmac[5]);
-	printf("srcMAC: %02X:%02X:%02X:%02X:%02X:%02X:\n", ethh->srcmac[0], ethh->srcmac[1], ethh->srcmac[2],
-		ethh->srcmac[3], ethh->srcmac[4], ethh->srcmac[5]);
-
-
-	switch (ntohs(ethh->prototype))
+	m_sendsock.OpenNetDevice(0);
+	uint32_t dst = inet_addr("172.16.4.91");
+	while (1)
 	{
-	case ETHTYPE::ARP:
-		printf("protocol type: ARP\n");
-		break;
-	case ETHTYPE::IPV4:
-		iph = (PIPV4Header)(pkt_data + ETHERNETHEADER_LENGTH);
-		printf("protocol type: IPV4\n");
-		printf("srcIP: %d.%d.%d.%d\n", iph->srcaddr[0], iph->srcaddr[1], iph->srcaddr[2], iph->srcaddr[3]);
-		printf("dstIP: %d.%d.%d.%d\n", iph->dstaddr[0], iph->dstaddr[1], iph->dstaddr[2], iph->dstaddr[3]);
-		switch (iph->protoid)
-		{
-		case IPV4TYPE::ICMP:
-			printf("ProtocolType: ICMP\n");
-			break;
-		case IPV4TYPE::TCP:
-			printf("ProtocolType: TCP\n");
-			break;
-		case IPV4TYPE::UDP:
-			printf("ProtocolType: UDP\n");
-			break;
-		default:
-			break;
-		}
-
-		break;
-	default:
-		printf("protocol type: OTHER\n");
-		break;
+		m_sendsock.SendICMPV4ECHORequest(dst);
+		m_sendsock.SendPingInWin(dst);
+		Sleep(1000);
 	}
+	m_sendsock.SendICMPV4ECHORequest(dst);
+	//m_sendsock.SendPingInWin(dst);
 }
-TEST_F(CWPcapSocketTest, SendSocket_Capture)
-{
-	m_capsock.OpenNetDevice(0);
-	m_capsock.CreatePacketFilter("");
-	m_capsock.StartCapture(PrintPacket, NULL, 0, 0);
-}
+
+//void PrintPacket(const u_char *param, const u_char *pkt_data)
+//{
+//	(param);
+//	ETHHeader *ethh = (ETHHeader *)pkt_data;
+//	PIPV4Header iph;
+//	printf("-------------------------------------------\n");
+//	printf("dstMAC: %02X:%02X:%02X:%02X:%02X:%02X:\n", ethh->dstmac[0], ethh->dstmac[1], ethh->dstmac[2],
+//		ethh->dstmac[3], ethh->dstmac[4], ethh->dstmac[5]);
+//	printf("srcMAC: %02X:%02X:%02X:%02X:%02X:%02X:\n", ethh->srcmac[0], ethh->srcmac[1], ethh->srcmac[2],
+//		ethh->srcmac[3], ethh->srcmac[4], ethh->srcmac[5]);
+//
+//	switch (ntohs(ethh->prototype))
+//	{
+//	case ETHTYPE::ARP:
+//		printf("protocol type: ARP\n");
+//		break;
+//	case ETHTYPE::IPV4:
+//		iph = (PIPV4Header)(pkt_data + ETHERNETHEADER_LENGTH);
+//		printf("protocol type: IPV4\n");
+//		printf("srcIP: %d.%d.%d.%d\n", iph->srcaddr[0], iph->srcaddr[1], iph->srcaddr[2], iph->srcaddr[3]);
+//		printf("dstIP: %d.%d.%d.%d\n", iph->dstaddr[0], iph->dstaddr[1], iph->dstaddr[2], iph->dstaddr[3]);
+//		switch (iph->protoid)
+//		{
+//		case IPV4TYPE::ICMP:
+//			printf("ProtocolType: ICMP\n");
+//			break;
+//		case IPV4TYPE::TCP:
+//			printf("ProtocolType: TCP\n");
+//			break;
+//		case IPV4TYPE::UDP:
+//			printf("ProtocolType: UDP\n");
+//			break;
+//		default:
+//			break;
+//		}
+//
+//		break;
+//	default:
+//		printf("protocol type: OTHER\n");
+//		break;
+//	}
+//}
+//TEST_F(CWPcapSocketTest, SendSocket_Capture)
+//{
+//	m_capsock.OpenNetDevice(0);
+//	m_capsock.CreatePacketFilter("");
+//	m_capsock.StartCapture(PrintPacket, NULL, 0, 0);
+//}

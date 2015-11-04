@@ -5,8 +5,6 @@ CNetworkIPScan::CNetworkIPScan()
 {
 	InitializeAll();
 }
-
-
 CNetworkIPScan::~CNetworkIPScan()
 {
 }
@@ -38,35 +36,37 @@ void CNetworkIPScan::Scan(int nicindex)
 // 패킷 전송 스레드 함수
 UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 {
+	CNetworkScannerDlg *maindlg = (CNetworkScannerDlg *)(AfxGetApp()->GetMainWnd());
 	CWPcapSendSocket *sendsock = (CWPcapSendSocket *)((struct Params*)lpParam)->param1;
 	bool *isdye = (bool *)((struct Params*)lpParam)->param2;
 	CIPStatusList *iplist = (CIPStatusList *)((struct Params*)lpParam)->param3;
 	// 스레드 종료 확인
 	if (*isdye)
 		return 0;
+
 	int size = iplist->GetSize();
 	int i = 0;
 	for (; i < size; i++)
 	{
+		// 스레드 종료 확인
 		if (*isdye)
 			return 0;
 		sendsock->SendARPRequest(iplist->At(i)->IPAddress);
 	}
-	
+	maindlg->ListCtrlUpdate();
 
 	for (i = 0; i < size; i++)
 	{
+		// 스레드 종료 확인
 		if (*isdye)
 			return 0;
 		sendsock->SendPingInWin(iplist->At(i)->IPAddress);
 	}
-	
-	CNetworkScannerDlg *maindlg = (CNetworkScannerDlg *)(AfxGetApp()->GetMainWnd());
+
 	maindlg->ListCtrlUpdate();
 	
 	return 0;
 }
-
 void CNetworkIPScan::StartSend()
 {
 	static struct Params sendparam;
@@ -87,7 +87,6 @@ void CNetworkIPScan::StartSend()
 	if (m_hSendThread == NULL)
 		throw std::exception("스레드 시작 실패");
 }
-
 void CNetworkIPScan::EndSend()
 {
 	if (m_hSendThread != NULL)
@@ -178,7 +177,6 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 		break;
 	}
 }
-
 void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 {
 	// 파라미터 변환
@@ -210,7 +208,6 @@ void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 	}
 }
 
-
 // 쓰레드용 캡처 시작 함수 
 UINT AFX_CDECL CNetworkIPScan::CaptureThreadFunc(LPVOID lpParam)
 {
@@ -224,6 +221,7 @@ UINT AFX_CDECL CNetworkIPScan::CaptureThreadFunc(LPVOID lpParam)
 // EndCapture()로 종료
 void CNetworkIPScan::StartCapture()
 {
+	// 캡쳐 스레드 파라미터
 	static struct CaptureParam capparam;
 	
 	if (m_hCaptureThread == NULL)
@@ -231,6 +229,9 @@ void CNetworkIPScan::StartCapture()
 		memset(&capparam, 0, sizeof(struct CaptureParam));
 		capparam.param_capsock = &m_CaptureSock;
 		capparam.param_ipstatlist = &m_IPStatInfoList;
+		
+
+		// 캡쳐 스레드 시작
 		m_hCaptureThread = AfxBeginThread(CaptureThreadFunc, &capparam, 0, 0, 0);
 	}
 	else
@@ -252,4 +253,15 @@ void CNetworkIPScan::EndCapture()
 		WaitForSingleObject(m_hCaptureThread->m_hThread, INFINITE);
 		m_hCaptureThread = NULL;
 	}
+}
+
+void CNetworkIPScan::IPStatusListInsertItem(IPStatusInfo *ipstatinfo, uint32_t hbeginip, uint32_t hendip)
+{
+
+	/*for (; hbeginip <= hendip; hbeginip++)
+	{
+		int index = m_IPStatInfoList.IsInItem(htonl(hbeginip));
+		if (index == -1)
+			m_IPStatInfoList->InsertItem(htonl(hbeginip), mac, IPSTATUS::NOTUSING, false);
+	}*/
 }

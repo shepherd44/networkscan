@@ -59,6 +59,7 @@ void CWPcapSocket::FindNetDevice()
 				m_NICInfoList.AddItem(d->name,
 									  d->description,
 									  inet_addr(pai->IpAddressList.IpMask.String), 
+									  inet_addr(pai->GatewayList.IpAddress.String),
 									  inet_addr(pai->IpAddressList.IpAddress.String), 
 									  mac);
 				

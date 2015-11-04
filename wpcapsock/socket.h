@@ -45,7 +45,7 @@ protected:
 	void FindNetDevice(); // 작동중인 네트워크 디바이스 찾기
 
 public:
-	// 네트워크 인터페이스 연결
+	// pcap_t 네트워크 인터페이스 연결
 	void OpenNetDevice(int index = 0);
 	void OpenNetDevice(const char *nicname);
 	void CloseNetDevice();

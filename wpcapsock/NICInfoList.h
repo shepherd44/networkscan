@@ -11,6 +11,7 @@ typedef struct NICInfo
 	char* Description;
 	char* AdapterName;
 	uint32_t Netmask;
+	uint32_t GatewayIPAddress;
 	uint32_t NICIPAddress;
 	uint8_t NICMACAddress[6];
 	ListHead list;
@@ -32,7 +33,7 @@ public:
 	}
 	~CNICInfoList()	{ ClearList(); }
 
-	void AddItem(const char *name, const char *des, uint32_t netmask, uint32_t ip, const uint8_t *mac);
+	void AddItem(const char *name, const char *des, uint32_t netmask, uint32_t gatewayip, uint32_t ip, const uint8_t *mac);
 	int IsInItem(const char *name);
 	void RemoveItem(PListHead ph);
 	void ClearList();

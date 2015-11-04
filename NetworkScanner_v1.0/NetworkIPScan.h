@@ -9,12 +9,14 @@
 	#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 
+// 캡처 스레드 파라미터
 struct CaptureParam
 {
 	CWPcapCaptureSocket *param_capsock;
 	CIPStatusList *param_ipstatlist;
 };
 
+// 파라미터 3개 구조체
 struct Params
 {
 	void *param1;
@@ -62,12 +64,17 @@ public:
 	void StartSend();
 	void EndSend();
 
+	// NIC 정보 리스트 가져오기
 	CNICInfoList *GetNicInfoList()
 	{
 		return &(m_SendSock.m_NICInfoList);
 	}
 	
+	// IPStatus List 가져오기
 	CIPStatusList *GetIpStatusList() { return &m_IPStatInfoList; }
+	// IPStatusList 아이템 삽입( 중복 제거 및 순서대로)
+	void IPStatusListInsertItem(IPStatusInfo *ipstatinfo, uint32_t hbeginip, uint32_t hendip);
+	
 public:
 	CNetworkIPScan();
 	~CNetworkIPScan();

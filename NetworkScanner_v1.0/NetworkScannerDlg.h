@@ -104,6 +104,7 @@ public:
 	void ListCtrlInit();
 	void ListCtrlDeleteAll();
 	void ListCtrlInsertData(IPStatusInfo *item);
+	void ListCtrlUpdateData(int index, IPStatusInfo *item);
 	int *GetCheckedItem();
 	bool IsListUpdateThreadDye() { return m_IsListUpdateThreadDye; }
 	void ListCtrlUpdate(){ m_EventListUpdate.SetEvent(); }

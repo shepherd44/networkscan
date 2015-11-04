@@ -14,50 +14,64 @@ int CWPcapSendSocket::SendPacket(uint8_t *packet, int len)
 	return ret;
 }
 
+// 이더넷 헤더 셋팅
 // ARP Table과 ARP를 사용하여 상대 맥주소 설정
+// @packet: 셋팅할 버퍼 위치
+// @src: 메시지 송신자 맥 주소
+// @prototype: 프로토콜 타입
+// @dstip: 목적지 ip 주소
 int CWPcapSendSocket::SetETHHeaderWithARP(uint8_t *packet, uint8_t *src, uint16_t prototype, uint32_t dstip)
 {
 	// ARP 테이블 불러오기
 	PMIB_IPNETTABLE pMib = NULL;
 	GetARPTable(&pMib);
-	//for (int i = 0; i < pMib->dwNumEntries; i++)
-	//{
 
-	//}
-
+	uint32_t maclen = MACADDRESS_LENGTH;
+	uint8_t dstmac[MACADDRESS_LENGTH];
+	memset(dstmac, 0, MACADDRESS_LENGTH);
 	// 내부 네트워크인지 확인
-	// 내부일 경우 ARP 테이블 확인
-	if (1)
+	int i = 0;
+	if (IsInNet(dstip))		
 	{
-		// 테이블에서 IP 찾아보기
-
-		// 있으면 사용
-		if (1)
+		// 내부일 경우 ARP 테이블 확인
+		for (; i < pMib->dwNumEntries; i++)
 		{
-
+			if (pMib->table[i].dwAddr == dstip)
+			{
+				memcpy(dstmac, pMib->table[i].bPhysAddr, pMib->table[i].dwPhysAddrLen);
+				break;
+			}
+		}
+		// // ARP 응답 있으면 해당 맥주소 셋팅
+		if (i < pMib->dwNumEntries)
+		{
+			SetETHHeader(packet, dstmac, m_NICInfoList.At(m_CurSel)->NICMACAddress, prototype);
 		}
 		// 없으면 ARP 요청
 		else
 		{
-
-		}
-
-		// ARP 응답 있으면 해당 맥주소 셋팅
-		if (1)
-		{
-
-		}
-		// ARP 응답 없으면 셋팅 안하고 종료
-		else
-		{
-			return -1;
-		}
-	}
-	// 외부일 경우 ARP 테이블에서 게이트웨이 맥주소 가져오기
+			if (GetDstMAC(dstmac, dstip, 1000))
+				return -1;
+			// ARP 응답 없으면 셋팅 안하고 종료
+			else
+			{
+				SetETHHeader(packet, dstmac, m_NICInfoList.At(m_CurSel)->NICMACAddress, prototype);
+			}
+		}	
+	}// 외부일 경우 ARP 테이블에서 게이트웨이 맥주소 가져온다
 	else
 	{
-
+		for (; i < pMib->dwNumEntries; i++)
+		{
+			if (pMib->table[i].dwAddr == m_NICInfoList.At(m_CurSel)->GatewayIPAddress)
+			{
+				memcpy(dstmac, pMib->table[i].bPhysAddr, pMib->table[i].dwPhysAddrLen);
+				break;
+			}
+		}
+		return -1;
 	}
+	return 0;
 }
 
 void CWPcapSendSocket::SetETHHeader(uint8_t *packet, uint8_t *dst, uint8_t *src, uint16_t prototype)
@@ -87,7 +101,6 @@ void CWPcapSendSocket::SetARPRequest(uint8_t *out, uint8_t *srcmac, uint8_t *src
 	// 패킷 셋팅
 	memcpy(out, &arppacket, arplen);
 }
-
 int CWPcapSendSocket::SendARPRequest(uint32_t dstip)
 {
 	NICInfo *NICInfo = m_NICInfoList.At(m_CurSel);
@@ -114,38 +127,40 @@ int CWPcapSendSocket::SendARPRequest(uint32_t dstip)
 
 	return ret;
 }
-
-
-int CWPcapSendSocket::GetDstMAC(uint8_t *dstmac, uint32_t dstip)
+int CWPcapSendSocket::GetDstMAC(uint8_t *dstmac, uint32_t dstip, int timeout)
 {
 	ARPPacket *arpp;
 	pcap_pkthdr pkthdr;
 	uint8_t *packet;
+	SYSTEMTIME systime;
+	GetSystemTime(&systime);
 
-	SendARPRequest(dstip);
-	SendARPRequest(dstip);
-	SendARPRequest(dstip);
-	for (int i = 0; i < 100; i++)
+	// ARP 요청을 보낸 뒤 확인
+	for (int n = 0; n < 3; n++)
 	{
-		packet = (uint8_t*)pcap_next(m_pCapHandler, &pkthdr);
-		uint16_t op;
-		memcpy(&op, packet + MACADDRESS_LENGTH * 2, 2);
-		if (op == htons(ETHTYPE::ARP))
+		// ARP 요청
+		SendARPRequest(dstip);
+		// 패킷 확인
+		for (int i = 0; i < 100; i++)
 		{
-			arpp = (ARPPacket*)(packet + ETHERNETHEADER_LENGTH);
-			uint32_t ip;
-			memcpy(&ip, &arpp->spaddr, IPV4ADDRESS_LENGTH);
-			if (ip == dstip)
+			packet = (uint8_t*)pcap_next(m_pCapHandler, &pkthdr);
+			uint16_t op;
+			memcpy(&op, packet + MACADDRESS_LENGTH * 2, 2);
+			if (op == htons(ETHTYPE::ARP))
 			{
-				memcpy(dstmac, (arpp->shaddr), MACADDRESS_LENGTH);
-				return 0;
+				arpp = (ARPPacket*)(packet + ETHERNETHEADER_LENGTH);
+				uint32_t ip;
+				memcpy(&ip, &arpp->spaddr, IPV4ADDRESS_LENGTH);
+				if (ip == dstip)
+				{
+					memcpy(dstmac, (arpp->shaddr), MACADDRESS_LENGTH);
+					return 0;
+				}
 			}
 		}
 	}
 	return -1;
 }
-
-// ip 단편화 전송
 
 // ip 직접 셋팅
 // 플래그 셋팅 시 
@@ -154,11 +169,15 @@ void CWPcapSendSocket::SetIPPacket(
 	uint16_t headerlen,
 	uint16_t identification,
 	uint16_t flags,
+	uint8_t ttl,
 	uint8_t prototype,
+	bool ischeck,
 	uint8_t *srcip,
 	uint8_t *dstip,
 	uint8_t *data,
-	uint16_t datalen)
+	uint16_t datalen,
+	uint8_t *option,
+	uint16_t)
 {
 	IPV4Header *piph = (IPV4Header*)packet;
 	piph->version = 4;
@@ -169,14 +188,17 @@ void CWPcapSendSocket::SetIPPacket(
 	piph->identification = identification;
 	piph->flags = flags;
 
-	piph->ttl = 128;
+	piph->ttl = ttl;
 	piph->protoid = prototype;
 	piph->checksum = 0;
 	memcpy(piph->srcaddr, srcip, IPV4ADDRESS_LENGTH);
 	memcpy(piph->dstaddr, dstip, IPV4ADDRESS_LENGTH);
 
-	piph->checksum = IPHeaderChecksum(piph->headerlen, (uint16_t*)piph);
-	piph->checksum = htons(piph->checksum);
+	if (ischeck)
+	{
+		piph->checksum = IPHeaderChecksum(piph->headerlen, (uint16_t*)piph);
+		piph->checksum = htons(piph->checksum);
+	}
 }
 
 
@@ -221,8 +243,7 @@ void CWPcapSendSocket::SendPingInWin(uint32_t dstip)
 	//CloseHandle(hIcmpFile);
 	free(ReplyBuffer);
 }
-
-void CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
+int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 {
 	NICInfo *nicinfo = m_NICInfoList.At(m_CurSel);
 	uint16_t packetlen = ICMPV4ECHO_LENGTH + IPV4HEADER_BASICLENGTH + ETHERNETHEADER_LENGTH;
@@ -233,60 +254,48 @@ void CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 	memset(packet, 0, packetlen);
 
 	// ICMP 헤더 셋팅
-
 	uint8_t *picmp = (packet + ipheaderlen + ethlen);
 	uint16_t datalen = icmpv4len - ICMPV4HEADER_LENGTH;
 	uint8_t *data = (uint8_t *)malloc(datalen);
 	uint16_t i = 0;
-	for (; i < datalen - 9; i++)
-		data[i] = i + 0x61;
-	for (; i < datalen; i++)
-		data[i] = i + 0x4a;
+	
+	memset(data, 0, datalen);
+	data[0] = 0x44;
+	data[1] = 0x61;
+	data[2] = 0x74;
+	data[3] = 0x61;
+	data[4] = 0x20;
+	data[5] = 0x42;
+	data[6] = 0x75;
+	data[7] = 0x66;
+	data[8] = 0x66;
+	data[9] = 0x65;
 
-
-	SetICMPV4Packet(picmp, ICMPV4TYPE::ICMPV4_ECHO_REQUEST,	0, 0x0100, 0x0100, data, datalen);
+	SetICMPV4Packet(picmp, ICMPV4TYPE::ICMPV4_ECHO_REQUEST,	0, rand()%0x10000, 0x0000, data, datalen);
 	free(data);
 
 	// IP 헤더 셋팅(-단편화 고려 x-)
 	uint8_t *pip = packet + ethlen;
 	datalen += ICMPV4HEADER_LENGTH;
-	SetIPPacket(pip, IPV4HEADER_BASICLENGTH, rand() %0x10000, 0x0000, IPV4TYPE::ICMP, (uint8_t *)&nicinfo->NICIPAddress, (uint8_t *)&dstip, (uint8_t *)picmp, datalen);
-
-	// 이더넷 헤더 셋팅 과정(따로 뺄것!!! - 이더넷 헤더 셋팅에서 해 주어야할 과정)
-	// ARP 테이블 불러오기
-	PMIB_IPNETTABLE pMib = NULL;
-	GetARPTable(&pMib);
-	for (int i = 0; i < pMib->dwNumEntries; i++)
-	{
-
-	}
-	
-
-	// 네트워크 내부 / 외부 확인
-	uint32_t maclen = MACADDRESS_LENGTH;
-	uint8_t mac[MACADDRESS_LENGTH];
-	memset(mac, 0, MACADDRESS_LENGTH);
-
-	if (IsInNet(dstip))		// 내부 네트워크일 경우 ARP 전송
-	{
-		GetDstMAC(mac, dstip);
-	}
-	else
-	{
-		// 외부 네트워크일 경우 ARP 테이블에서 게이트웨이 주소 가져오기
-	}
-
-	// 윈도우 버전 arp 전송
-	// SendARP((IPAddr)dstip, nicinfo->NICIPAddress, nicinfo->NICMACAddress, (PULONG)&maclen);
-	// 내가 만든 ARP 리퀘스트
-	SendARPRequest((IPAddr)dstip);
+	SetIPPacket(
+		pip,
+		IPV4HEADER_BASICLENGTH,
+		0xe92a,
+		0x0000,
+		255,
+		IPV4TYPE::ICMP,
+		false,
+		(uint8_t *)&nicinfo->NICIPAddress,
+		(uint8_t *)&dstip,
+		(uint8_t *)picmp,
+		datalen);
 
 	// 이더넷 헤더 셋팅
-	SetETHHeader(packet, mac, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4));
-
+	//SetETHHeader(packet, dstmac, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4));
+	SetETHHeaderWithARP(packet, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4), dstip);
 	// 패킷 전송
-	SendPacket(packet, packetlen);
-	free(pMib);
+	int ret = SendPacket(packet, packetlen);
+	return ret;
 }
 
 void CWPcapSendSocket::SetICMPV4Packet(uint8_t *out, uint8_t type, uint8_t code, uint16_t iden, uint16_t seq, uint8_t *data, uint16_t datalen)
@@ -310,7 +319,8 @@ bool CWPcapSendSocket::IsInNet(uint32_t ip)
 	uint32_t nicip = NICInfo->NICIPAddress;
 	uint32_t net = nicip & netmask;
 
-	if (ip > net && ip < net + ~netmask)
+	ip = ntohl(ip);
+	if (ip > ntohl(net) && ip < ntohl(net + ~netmask))
 		return true;
 	else
 		return false;

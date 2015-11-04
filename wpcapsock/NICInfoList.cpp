@@ -1,6 +1,6 @@
 #include "NICInfoList.h"
 
-void CNICInfoList::AddItem(const char *name, const char *des, uint32_t netmask, uint32_t ip, const uint8_t *mac)
+void CNICInfoList::AddItem(const char *name, const char *des, uint32_t netmask, uint32_t gatewayip, uint32_t ip, const uint8_t *mac)
 {
 	int len = 0;
 	NICInfo *temp = new NICInfo;
@@ -18,6 +18,7 @@ void CNICInfoList::AddItem(const char *name, const char *des, uint32_t netmask, 
 	memcpy(temp->Description, des, len);
 
 	temp->Netmask = netmask;
+	temp->GatewayIPAddress = gatewayip;
 	temp->NICIPAddress = ip;
 	
 	memcpy(temp->NICMACAddress, mac, MACADDRESS_LENGTH);
