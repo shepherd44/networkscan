@@ -29,6 +29,7 @@ int CWPcapSendSocket::SetETHHeaderWithARP(uint8_t *packet, uint8_t *src, uint16_
 	uint32_t maclen = MACADDRESS_LENGTH;
 	uint8_t dstmac[MACADDRESS_LENGTH];
 	memset(dstmac, 0, MACADDRESS_LENGTH);
+
 	// 내부 네트워크인지 확인
 	int i = 0;
 	if (IsInNet(dstip))		
@@ -42,17 +43,17 @@ int CWPcapSendSocket::SetETHHeaderWithARP(uint8_t *packet, uint8_t *src, uint16_
 				break;
 			}
 		}
-		// // ARP 응답 있으면 해당 맥주소 셋팅
+		// ARP 응답 있으면 해당 맥주소 셋팅
 		if (i < pMib->dwNumEntries)
 		{
 			SetETHHeader(packet, dstmac, m_NICInfoList.At(m_CurSel)->NICMACAddress, prototype);
-		}
-		// 없으면 ARP 요청
+		}// 없으면 ARP 요청
 		else
 		{
 			if (GetDstMAC(dstmac, dstip, 1000))
+			{
 				return -1;
-			// ARP 응답 없으면 셋팅 안하고 종료
+			}// ARP 응답 없으면 셋팅 안하고 종료
 			else
 			{
 				SetETHHeader(packet, dstmac, m_NICInfoList.At(m_CurSel)->NICMACAddress, prototype);
@@ -134,6 +135,8 @@ int CWPcapSendSocket::GetDstMAC(uint8_t *dstmac, uint32_t dstip, int timeout)
 	uint8_t *packet;
 	SYSTEMTIME systime;
 	GetSystemTime(&systime);
+
+	uint16_t time = systime.wMilliseconds + systime.wSecond << 8 + systime.wMinute << 16;
 
 	// ARP 요청을 보낸 뒤 확인
 	for (int n = 0; n < 3; n++)

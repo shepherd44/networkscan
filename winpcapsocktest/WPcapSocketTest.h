@@ -114,7 +114,7 @@ TEST_F(CWPcapSocketTest, SendSocket_SetICMPV4ECHO)
 	while (1)
 	{
 		m_sendsock.SendICMPV4ECHORequest(dst);
-		m_sendsock.SendPingInWin(dst);
+		//m_sendsock.SendPingInWin(dst);
 		Sleep(1000);
 	}
 	m_sendsock.SendICMPV4ECHORequest(dst);

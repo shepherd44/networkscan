@@ -36,13 +36,13 @@ public:
 	int GetDstMAC(uint8_t *dstmac, uint32_t dstip, int timeout);
 
 	// ARP 요청 메시지 작성
-	void SetARPRequest(
-		uint8_t *out,
-		uint8_t *srcmac,
-		uint8_t *srcip,
-		uint8_t *dstmac,
-		uint8_t *dstip,
-		uint16_t op);	
+	// @ out: 패킷 작성할 위치
+	// @ srcmac: 전송자 MAC 주소
+	// @ srcip: 전송자 IP 주소
+	// @ dstmac: 도착지 MAC 주소
+	// @ dstip: 도착지 IP주소
+	// @ op: ARP OP Code
+	void SetARPRequest(uint8_t *out, uint8_t *srcmac, uint8_t *srcip, uint8_t *dstmac, uint8_t *dstip, uint16_t op);
 	
 	// ICMP Send
 	// 가짜, 윈도우 함수 사용 버전
