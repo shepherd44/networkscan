@@ -55,9 +55,9 @@ void CNICInfoDlg::InitializeAll()
 
 void CNICInfoDlg::ListCtrlNICInfoInit()
 {
-	LISTCTRLNICINFO_COULMNSTRING;	// static wchar_t *ListCtrlColumnString[] 선언
+	// static wchar_t *ListCtrlColumnString[] 선언
+	LISTCTRLNICINFO_COULMNSTRING;	
 
-	m_ListCtrlNICInfoList.DeleteAllItems();
 	m_ListCtrlNICInfoList.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	// 열 설정
@@ -67,26 +67,38 @@ void CNICInfoDlg::ListCtrlNICInfoInit()
 	for (; i < size; i++)
 		m_ListCtrlNICInfoList.InsertColumn(i, ListCtrlColumnString[i], LVCFMT_LEFT, LIST_COLUMN_LENGTH, -1);
 
-	// NIC 정보 삽입
+	// Main Dlg 가져오기
 	CNetworkScannerDlg *temp = (CNetworkScannerDlg*)AfxGetApp()->GetMainWnd();
+
+	// nic list 가져오기: Network Scanner의 SendSocket을 이용
 	CNICInfoList *niclist = temp->m_NetworkIPScan.GetNicInfoList();
+
 	NICInfo *nicitem;
 	CString str;
 	size = niclist->GetSize();
 	
+	// NIC 정보 삽입
+	// 리스트 컨트롤 초기화
+	m_ListCtrlNICInfoList.DeleteAllItems();	
+	// NIC 정보 출력
 	for (i = 0; i < size; i++)
 	{
 		nicitem = niclist->At(i);
 
+		// 1열
 		str.Format(_T("%d"), i + 1);
 		m_ListCtrlNICInfoList.InsertItem(i, str);
 		m_ListCtrlNICInfoList.SetItem(i, 1, LVIF_TEXT, CString(nicitem->Description), 0, 0, 0, NULL);
+
+		// 2열
 		str.Format(_T("%d.%d.%d.%d"),
 			(nicitem->NICIPAddress) & 0xff,
 			(nicitem->NICIPAddress >> 8) & 0xff,
 			(nicitem->NICIPAddress >> 16) & 0xff,
 			(nicitem->NICIPAddress >> 24) & 0xff);
 		m_ListCtrlNICInfoList.SetItem(i, 2, LVIF_TEXT, str, 0, 0, 0, NULL);
+
+		// 3열
 		str.Format(_T("%02X:%02X:%02X:%02X:%02X:%02X"), 
 			nicitem->NICMACAddress[0],
 			nicitem->NICMACAddress[1], 
@@ -95,6 +107,8 @@ void CNICInfoDlg::ListCtrlNICInfoInit()
 			nicitem->NICMACAddress[4], 
 			nicitem->NICMACAddress[5] );
 		m_ListCtrlNICInfoList.SetItem(i, 3, LVIF_TEXT, str, 0, 0, 0, NULL);
+
+		// 4열
 		str.Format(_T("%d.%d.%d.%d"),
 			(nicitem->Netmask) & 0xff,
 			(nicitem->Netmask >> 8) & 0xff,
@@ -114,13 +128,19 @@ void CNICInfoDlg::OnBnClickedBtnSelect()
 	int selected = -1;
 
 	POSITION pos = m_ListCtrlNICInfoList.GetFirstSelectedItemPosition();
-	
 	while (pos)
 	{
 		selected = m_ListCtrlNICInfoList.GetNextSelectedItem(pos);
 		break;
 	}
 
+	// 선택 안한 경우 0번 선택
+	if (selected == -1)
+	{
+		AfxMessageBox(_T("하나를 선택해 주세요."));
+		return;
+	}
+	// 선택된 NIC 반환
 	this->EndModalLoop(selected);
 }
 
