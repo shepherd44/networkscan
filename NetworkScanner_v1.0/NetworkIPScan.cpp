@@ -94,6 +94,7 @@ void CNetworkIPScan::EndSend()
 		m_IsSendThreadDye = TRUE;
 		WaitForSingleObject(m_hSendThread->m_hThread, INFINITE);
 		m_hSendThread = NULL;
+		m_CaptureSock.CloseNetDevice();
 	}
 }
 
@@ -250,6 +251,7 @@ void CNetworkIPScan::EndCapture()
 		m_CaptureSock.EndCapture();
 		WaitForSingleObject(m_hCaptureThread->m_hThread, INFINITE);
 		m_hCaptureThread = NULL;
+		m_CaptureSock.CloseNetDevice();
 	}
 }
 
