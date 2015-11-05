@@ -240,16 +240,9 @@ void CNetworkScannerDlg::OnBnClickedBtnScanAddip()
 	
 	m_NetworkIPScan.IPStatusListInsertItem(hbeginip, hendip);
 
-	/*for (; hbeginip <= hendip; hbeginip++)
-	{
-		int index = iplist->IsInItem(htonl(hbeginip));
-		if (index == -1)
-			iplist->AddItem(htonl(hbeginip), mac, IPSTATUS::NOTUSING, false);
-	}*/
 	// 리스트 컨트롤 아이템 지운 뒤 업데이트
 	ListCtrlDeleteAll();
 	int size = iplist->GetSize();
-
 	for (int i = 0; i < size; i++)
 	{
 		ListCtrlInsertData(iplist->At(i));
@@ -260,15 +253,22 @@ void CNetworkScannerDlg::OnBnClickedBtnScanRemoveip()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	int count = m_ListCtrlScanResult.GetItemCount();
-	for (int i = 0; i < count; i++)
+	
+	for (int i = count - 1; i >= 0; i--)
 	{
-		BOOL a = m_ListCtrlScanResult.GetCheck(i);
-		if (a == TRUE)
+		BOOL ischeck = m_ListCtrlScanResult.GetCheck(i);
+		if (ischeck == TRUE)
 		{
-			CString temp = m_ListCtrlScanResult.GetItemText(i, 0);
-			temp.Format(_T("%s seq가 선택됨"), temp);
-			AfxMessageBox(temp);
+			m_NetworkIPScan.IPStatusListDeleteItem(i);
 		}
+	}
+
+	CIPStatusList *iplist = m_NetworkIPScan.GetIpStatusList();
+	int size = iplist->GetSize();
+	ListCtrlDeleteAll();
+	for (int i = 0; i < size; i++)
+	{
+		ListCtrlInsertData(iplist->At(i));
 	}
 }
 

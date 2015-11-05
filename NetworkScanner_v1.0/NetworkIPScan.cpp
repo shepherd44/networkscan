@@ -296,3 +296,8 @@ void CNetworkIPScan::IPStatusListInsertItem(uint32_t hbeginip, uint32_t hendip)
 	}
 	maindlg->ListCtrlDeleteAndInsert();
 }
+
+void CNetworkIPScan::IPStatusListDeleteItem(int index)
+{
+	m_IPStatInfoList.RemoveItem(index);
+}

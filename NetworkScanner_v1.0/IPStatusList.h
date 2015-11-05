@@ -42,6 +42,7 @@ public:
 	int SearchItemIndex(uint32_t ip);
 	int IsInItem(uint32_t ip);
 	void RemoveItem(PListHead ph);
+	void RemoveItem(int index);
 	void ClearList();
 
 	// index´Â 0ºÎÅÍ, last item index == size - 1

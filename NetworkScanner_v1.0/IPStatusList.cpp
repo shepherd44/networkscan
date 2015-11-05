@@ -44,8 +44,6 @@ void CIPStatusList::InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ip
 	PListHead lh;
 	if (index > m_ListSize)
 		return ;
-	/*else if (index == m_ListSize)
-		lh = m_ListHead.prev;*/
 	else
 	{
 		lh = &m_ListHead;
@@ -154,6 +152,23 @@ void CIPStatusList::RemoveItem(PListHead ph)
 	IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
 	delete(item);
 	m_ListSize--;
+	Unlock();
+}
+
+void CIPStatusList::RemoveItem(int index)
+{
+	if (!Lock(INFINITE))
+		return;
+
+	PListHead ph = m_ListHead.next;
+	for (int i = 0; i < index; i++)
+		ph = ph->next;
+
+	ListDelete(ph);
+	IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
+	delete(item);
+	m_ListSize--;
+	
 	Unlock();
 }
 

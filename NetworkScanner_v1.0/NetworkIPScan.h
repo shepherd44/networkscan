@@ -75,6 +75,7 @@ public:
 	CIPStatusList *GetIpStatusList() { return &m_IPStatInfoList; }
 	// IPStatusList 아이템 삽입( 중복 제거 및 순서대로)
 	void IPStatusListInsertItem(uint32_t hbeginip, uint32_t hendip);
+	void IPStatusListDeleteItem(int index);
 	
 public:
 	CNetworkIPScan();
