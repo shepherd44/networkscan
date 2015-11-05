@@ -35,13 +35,12 @@ void CWPcapCaptureSocket::StartCapture(capture_handler handler, uint8_t *param, 
 	m_IsCapture = true;
 	while (1)
 	{	
+		if (!m_IsCapture)
+			break;
 		packet = (u_char *)pcap_next(m_pCapHandler, &pkthdr);
 		// 패킷 처리 콜백 함수 실행
 		if (handler != NULL && packet != NULL)
 			handler(param, packet);
-		
-		if (!m_IsCapture)
-			break;
 	}
 	return;
 }

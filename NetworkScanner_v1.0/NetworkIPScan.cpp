@@ -60,6 +60,8 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 	if (*isdye)
 		return 0;
 
+	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_ARPSEND);
+	maindlg->ListCtrlUpdate();
 	int size = iplist->GetSize();
 	int i = 0;
 	for (; i < size; i++)
@@ -69,17 +71,16 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 			return 0;
 		sendsock->SendARPRequest(iplist->At(i)->IPAddress);
 	}
-	maindlg->ListCtrlUpdate();
 
+	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_PINGSEND);
 	for (i = 0; i < size; i++)
 	{
 		// 스레드 종료 확인
 		if (*isdye)
 			return 0;
 		sendsock->SendPingInWin(iplist->At(i)->IPAddress);
+		maindlg->ListCtrlUpdate();
 	}
-
-	maindlg->ListCtrlUpdate();
 	
 	return 0;
 }
@@ -110,7 +111,7 @@ void CNetworkIPScan::EndSend()
 		m_IsSendThreadDye = TRUE;
 		WaitForSingleObject(m_hSendThread->m_hThread, INFINITE);
 		m_hSendThread = NULL;
-		m_CaptureSock.CloseNetDevice();
+		m_SendSock.CloseNetDevice();
 	}
 }
 

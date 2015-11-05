@@ -21,7 +21,7 @@
 #endif
 // 리스트 컨트롤 컬럼 스트링 선언 매크로
 
-#define LISTCTRL_COULMNSTRING	static wchar_t *ListCtrlColumnString[] = {	\
+#define LISTCTRL_COULMNSTRING__	static wchar_t *ListCtrlColumnString[] = {	\
 														_T("V"),			\
 														_T("No"),			\
 														_T("IP Address"),	\
@@ -29,27 +29,45 @@
 														_T("IP Status"),	\
 														_T("PING Reply"),	\
 													}
+#define LISTCTRL_COULMNSTRING_			ListCtrlColumnString
+#define LISTCTRL_COULMNSTRING(index)	ListCtrlColumnString[index]
+
 // IPSTATUSINFO 셀 배경색 선언 매크로
 // IPSTATUS 열거형 순서대로
-#define IPSTATUS_CELLCOLOR	static COLORREF ipstatcolor[] =	{				\
+#define IPSTATUS_CELLCOLOR__	static COLORREF ipstatcolor[] =	{				\
 														RGB(255, 255, 255),	\
 														RGB(250, 250, 210),	\
 														RGB(0, 200, 0),		\
 														RGB(200, 0, 0),		\
 														RGB(0, 0, 255)		\
 													}
-// 스테이터스바 컨트롤 관련 매크로
+#define IPSTATUS_CELLCOLOR(index)	ipstatcolor[index]
 
+// 스테이터스바 컨트롤 관련 매크로
+// SCANNING_STATE 순서대로 나열
+#define STATUSBARCTRL_STRING__	static wchar_t *statusbarstring[] = {		\
+	_T("Program start. Scannig Available"),									\
+	_T("Scan start. Sending Packet."),										\
+	_T("Scan start. Sending ARP Packet."),									\
+	_T("Scan start. Sending ICMP Packet."),									\
+	_T("Stop scannig"),														\
+	_T("Stop send packet"),													\
+	_T("Stop captue packet"),												\
+	_T("Program End. Wait...")												\
+};
+#define STATUSBARCTRL_STRING(index)		statusbarstring[index]
 // 버튼 클릭 상태 처리용 enum
 enum SCANNIG_STATE
 {
-	BEGIN = 0,		// 0, 처음 시작시
-	SCANNIG,		// 1, 스캔 시작 시
-	STOP_ALL,		// 2, 패킷 전송, 캡처 모두 중지
-	STOP_SEND,		// 3, IP 상태 확인용 패킷 전송 중지
-	STOP_RECV,		// 4, 패킷 캡처 및 분석 중지
-	PROGRAM_END,	// 5
-
+	BEGIN = 0,			// 0, 처음 시작시
+	SCANNIG,			// 1, 스캔 시작 시
+	SCANNING_ARPSEND,	// 2, ARP 패킷 전송 
+	SCANNING_PINGSEND,	// 3, ICMP 패킷 전송
+	STOP_ALL,			// 4, 패킷 전송, 캡처 모두 중지
+	STOP_SEND,			// 5, IP 상태 확인용 패킷 전송 중지
+	STOP_RECV,			// 6, 패킷 캡처 및 분석 중지
+	PROGRAM_END,		// 7, 프로그램 종료중
+	
 	SCANNING_STATE_END	// END
 };
 
@@ -155,5 +173,7 @@ public:
 	// NIC 선택용 콤보 박스
 	void ComboBoxInit();
 
+	void SetProgramState(SCANNIG_STATE state) { m_ProgramState = state; }
+	int GetProgeamState() { return m_ProgramState; }
 	afx_msg void OnClose();
 };

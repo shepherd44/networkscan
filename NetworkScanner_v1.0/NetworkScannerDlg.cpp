@@ -351,7 +351,7 @@ void CNetworkScannerDlg::IPAddrCtrlInit()
 // 리스트 컨트롤 초기화
 void CNetworkScannerDlg::ListCtrlInit()
 {
-	LISTCTRL_COULMNSTRING;	// static wchar_t *ListCtrlColumnString[] 선언
+	LISTCTRL_COULMNSTRING__;	// static wchar_t *ListCtrlColumnString[] 선언
 	ListCtrlDeleteAll();
 	
 	// 체크박스 체크방법
@@ -359,9 +359,9 @@ void CNetworkScannerDlg::ListCtrlInit()
 	m_ListCtrlScanResult.SetExtendedStyle(LVS_EX_CHECKBOXES | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	// 열 설정
-	int i = 0, size = sizeof(ListCtrlColumnString) / sizeof(wchar_t*);
-	m_ListCtrlScanResult.InsertColumn(i, ListCtrlColumnString[i++], LVCFMT_LEFT, LIST_COLUMN_NUMBER_LENGTH, -1);
-	m_ListCtrlScanResult.InsertColumn(i, ListCtrlColumnString[i++], LVCFMT_LEFT, LIST_COLUMN_NUMBER_LENGTH, -1);
+	int i = 0, size = sizeof(LISTCTRL_COULMNSTRING_) / sizeof(wchar_t*);
+	m_ListCtrlScanResult.InsertColumn(i, LISTCTRL_COULMNSTRING(i++), LVCFMT_LEFT, LIST_COLUMN_NUMBER_LENGTH, -1);
+	m_ListCtrlScanResult.InsertColumn(i, LISTCTRL_COULMNSTRING(i++), LVCFMT_LEFT, LIST_COLUMN_NUMBER_LENGTH, -1);
 	for (; i < size; i++)
 		m_ListCtrlScanResult.InsertColumn(i, ListCtrlColumnString[i], LVCFMT_LEFT, LIST_COLUMN_LENGTH, -1);
 }
@@ -456,7 +456,7 @@ void CNetworkScannerDlg::ListCtrlUpdateData(int index, IPStatusInfo *item)
 // 리스트 컨트롤 통지 함수
 afx_msg void CNetworkScannerDlg::OnListIPStatusCustomdraw(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	IPSTATUS_CELLCOLOR;		// static COLORREF ipstatcolor[] 선언
+	IPSTATUS_CELLCOLOR__;		// static COLORREF ipstatcolor[] 선언
 
 	NMLVCUSTOMDRAW* pLVCD = reinterpret_cast<NMLVCUSTOMDRAW*>(pNMHDR);
 	*pResult = CDRF_DODEFAULT;
@@ -467,7 +467,7 @@ afx_msg void CNetworkScannerDlg::OnListIPStatusCustomdraw(NMHDR* pNMHDR, LRESULT
 		int nItem = static_cast<int>(pLVCD->nmcd.dwItemSpec);
 		// 색 지정
 		IPStatusInfo *item = m_NetworkIPScan.GetIpStatusList()->At(nItem);
-		pLVCD->clrTextBk = ipstatcolor[item->IPStatus];
+		pLVCD->clrTextBk = IPSTATUS_CELLCOLOR(item->IPStatus);
 		*pResult = CDRF_DODEFAULT;
 	}
 }
@@ -484,16 +484,8 @@ void CNetworkScannerDlg::StatusBarCtrlInit()
 }
 void CNetworkScannerDlg::StatusBarCtrlUpdate()
 {
-	static wchar_t *statusbarstring[] =
-	{
-		_T("Program start. Scannig Available"),
-		_T("Scan start. Sending Packet."),
-		_T("Stop scannig"),
-		_T("Stop send packet"),
-		_T("Stop captue packet"),
-		_T("Program End. Wait...")
-	};
-	StatusBarCtrlUpdate(statusbarstring[m_ProgramState]);
+	STATUSBARCTRL_STRING__;
+	StatusBarCtrlUpdate(STATUSBARCTRL_STRING(m_ProgramState));
 }
 void CNetworkScannerDlg::StatusBarCtrlUpdate(wchar_t* string)
 {
@@ -536,9 +528,8 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 		// 종료 메시지 확인
 		if (*isdye)
 			break;
-
-		//maindlg->ListCtrlDeleteAll();
 		
+		maindlg->StatusBarCtrlUpdate();
 		int size = iplist->GetSize();
 		for (int i = 0; i < size; i++)
 		{

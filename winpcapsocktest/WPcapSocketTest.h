@@ -114,7 +114,7 @@ TEST_F(CWPcapSocketTest, SendSocket_SetICMPV4ECHO)
 	uint32_t dst = inet_addr("172.16.5.201");
 	int ret = pcap_datalink(m_sendsock.m_pCapHandler);
 	ASSERT_EQ(DLT_EN10MB, ret);
-	//while (1)
+	while (1)
 	{
 		m_sendsock.SendUDP();
 		m_sendsock.SendICMPV4ECHORequest(dst);
