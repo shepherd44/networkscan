@@ -41,13 +41,18 @@ void CIPStatusList::InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ip
 {
 	if (!Lock(INFINITE))
 		return;
-
-	if (index >= m_ListSize)
+	PListHead lh;
+	if (index > m_ListSize)
 		return ;
-	PListHead lh = m_ListHead.next;
-	for (int i = 0; i < index; i++)
-		lh = lh->next;
-
+	/*else if (index == m_ListSize)
+		lh = m_ListHead.prev;*/
+	else
+	{
+		lh = &m_ListHead;
+		for (int i = 0; i < index; i++)
+			lh = lh->next;
+	}
+	
 	IPStatusInfo *temp = new IPStatusInfo;
 	memset(temp, 0, sizeof(IPStatusInfo));
 	// 리스트에 삽입
@@ -108,6 +113,21 @@ void CIPStatusList::UpdateItemPingStat(int index, IPSTATUS ipstat, bool pingrepl
 	temp->IPStatus = ipstat;
 	temp->PingReply = pingreply;
 	Unlock();
+}
+int CIPStatusList::SearchItemIndex(uint32_t ip)
+{
+	int ret = 0;
+	PListHead ph = m_ListHead.next;
+	uint32_t itemip;
+	for (; ph != &m_ListHead; ph = ph->next, ret++)
+	{
+		itemip = GET_LIST_ITEM(ph, IPStatusInfo, list)->IPAddress;
+		if (itemip == ip)
+			return -1;
+		if (ntohl(itemip) > ntohl(ip))
+			return ret;
+	}
+	return ret;
 }
 
 // IP로 검색하기

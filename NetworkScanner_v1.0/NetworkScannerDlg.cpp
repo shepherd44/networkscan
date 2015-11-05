@@ -238,12 +238,14 @@ void CNetworkScannerDlg::OnBnClickedBtnScanAddip()
 		return;
 	}
 	
-	for (; hbeginip <= hendip; hbeginip++)
+	m_NetworkIPScan.IPStatusListInsertItem(hbeginip, hendip);
+
+	/*for (; hbeginip <= hendip; hbeginip++)
 	{
 		int index = iplist->IsInItem(htonl(hbeginip));
 		if (index == -1)
 			iplist->AddItem(htonl(hbeginip), mac, IPSTATUS::NOTUSING, false);
-	}
+	}*/
 	// 리스트 컨트롤 아이템 지운 뒤 업데이트
 	ListCtrlDeleteAll();
 	int size = iplist->GetSize();

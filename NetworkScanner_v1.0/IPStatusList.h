@@ -38,7 +38,8 @@ public:
 	void UpdateItemARPInfo(int index, uint8_t *mac, IPSTATUS ipstat);
 	void UpdateItemIPStat(int index, IPSTATUS ipstat);
 	void UpdateItemPingStat(int index, IPSTATUS ipstat, bool pingreply);
-
+	// ip가 내부에 있을경우 -1 반환
+	int SearchItemIndex(uint32_t ip);
 	int IsInItem(uint32_t ip);
 	void RemoveItem(PListHead ph);
 	void ClearList();

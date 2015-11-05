@@ -277,43 +277,22 @@ void CNetworkIPScan::EndCapture()
 	}
 }
 
-void CNetworkIPScan::IPStatusListInsertItem(IPStatusInfo *ipstatinfo, uint32_t hbeginip, uint32_t hendip)
+void CNetworkIPScan::IPStatusListInsertItem(uint32_t hbeginip, uint32_t hendip)
 {
-	/*CNetworkScannerDlg *maindlg = (CNetworkScannerDlg *)AfxGetApp()->GetMainWnd();
+	CNetworkScannerDlg *maindlg = (CNetworkScannerDlg *)AfxGetApp()->GetMainWnd();
 	IPStatusInfo *item;
 	int size = m_IPStatInfoList.GetSize();
 	int index;
 	int binary;
 	int nip;
+	uint8_t mac[MACADDRESS_LENGTH] = { 0, };
 	for (; hbeginip <= hendip; hbeginip++)
 	{
-		nip = htonl(hbeginip);
-		index = size / 2;
-		binary = size / 2;
-		while (1)
-		{
-			item = m_IPStatInfoList.At(index);
-			if (item->IPAddress == nip)
-				break;
-			binary = binary / 2;
-			if (binary)
-
-			if (item->IPAddress < nip)
-			{
-				index = index - binary;
-			}
-			else
-			{
-				index = index + binary;
-			}
-			
-			if (index / 2)
-		}
-		
-
-		int index = m_IPStatInfoList.IsInItem(htonl(hbeginip));
+		int index = m_IPStatInfoList.SearchItemIndex(htonl(hbeginip));
 		if (index == -1)
-			m_IPStatInfoList->InsertItem(htonl(hbeginip), mac, IPSTATUS::NOTUSING, false);
+			continue;
+		else
+			m_IPStatInfoList.InsertItem(index, htonl(hbeginip), mac, IPSTATUS::NOTUSING, false);
 	}
-	maindlg->ListCtrlDeleteAndInsert();*/
+	maindlg->ListCtrlDeleteAndInsert();
 }
