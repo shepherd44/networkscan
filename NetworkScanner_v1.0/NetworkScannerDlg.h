@@ -48,25 +48,27 @@
 #define STATUSBARCTRL_STRING__	static wchar_t *statusbarstring[] = {		\
 	_T("Program start. Scannig Available"),									\
 	_T("Scan start. Sending Packet."),										\
-	_T("Scan start. Sending ARP Packet."),									\
-	_T("Scan start. Sending ICMP Packet."),									\
+	_T("Sending ARP Packet and Capture"),									\
+	_T("Sending ICMP Packet and Capture."),									\
+	_T("Packet send complete and Capture. "),								\
 	_T("Stop scannig"),														\
-	_T("Stop send packet"),													\
-	_T("Stop captue packet"),												\
+	_T("Stop send packet, and Packet capture"),								\
+	_T("Stop captue packet, and Packet Send"),								\
 	_T("Program End. Wait...")												\
 };
 #define STATUSBARCTRL_STRING(index)		statusbarstring[index]
 // 버튼 클릭 상태 처리용 enum
 enum SCANNIG_STATE
 {
-	BEGIN = 0,			// 0, 처음 시작시
-	SCANNIG,			// 1, 스캔 시작 시
-	SCANNING_ARPSEND,	// 2, ARP 패킷 전송 
-	SCANNING_PINGSEND,	// 3, ICMP 패킷 전송
-	STOP_ALL,			// 4, 패킷 전송, 캡처 모두 중지
-	STOP_SEND,			// 5, IP 상태 확인용 패킷 전송 중지
-	STOP_RECV,			// 6, 패킷 캡처 및 분석 중지
-	PROGRAM_END,		// 7, 프로그램 종료중
+	BEGIN = 0,			// 처음 시작시
+	SCANNIG,			// 스캔 시작 시
+	SCANNING_ARPSEND,	// ARP 패킷 전송 
+	SCANNING_PINGSEND,	// ICMP 패킷 전송
+	SCANNING_COMPLETE,	// 
+	STOP_ALL,			// 패킷 전송, 캡처 모두 중지
+	STOP_SEND,			// IP 상태 확인용 패킷 전송 중지
+	STOP_RECV,			// 패킷 캡처 및 분석 중지
+	PROGRAM_END,		// 프로그램 종료중
 	
 	SCANNING_STATE_END	// END
 };
@@ -98,8 +100,6 @@ protected:
 protected:
 	void InitializeAll();
 
-	// 리스트 컨트롤 업데이트 지시 이벤트 변수
-	CEvent *m_EventListUpdate;
 	// 리스트 컨트롤 업데이트 쓰레드
 	CWinThread *m_ListUpdateThread;
 	// 리스트 컨트롤 중지용 변수
@@ -117,6 +117,9 @@ protected:
 
 // 컨트롤 변수 및 함수
 public:
+	// 종료
+	afx_msg void OnClose();
+
 	// 버튼 클릭 이벤트 처리
 	afx_msg void OnBnClickedBtnScan();			// 스캔 시작 버튼
 	afx_msg void OnBnClickedBtnStopAll();		// 스캔 중지
@@ -130,22 +133,14 @@ public:
 	CListCtrl m_ListCtrlScanResult;
 	// 리스트 컨트롤 유저 지정 통지 함수
 	afx_msg void OnListIPStatusCustomdraw(NMHDR* pNMHDR, LRESULT* pResult);
+	// 오너드로우
+	afx_msg void OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *pResult);
 	// 리스트 컨트롤 초기화 함수
 	void ListCtrlInit();
-	// 리스트 컨트롤 비우기
-	void ListCtrlDeleteAll();
-	// 리스트 컨트롤 비우고 결과 버퍼에서 업데이트
-	void ListCtrlDeleteAndInsert();
-	// 리스트 컨트롤에 아이템 삽입(Tail)
-	void ListCtrlInsertData(IPStatusInfo *item);
-	// 리스트 컨트롤 항목 갱신 함수
-	void ListCtrlUpdateData(int index, IPStatusInfo *item);
 	// 체크박스로 체크된 항목 가져오기
 	int *GetCheckedItem();
-	// 리스트 컨트롤 업데이트 
+	// 리스트 컨트롤 업데이트 쓰레드 상태 확인
 	bool IsListUpdateThreadDye() { return m_IsListUpdateThreadDye; }
-	// 리스트 컨트롤 업데이트 지시(이벤트 시그널 발생)
-	void ListCtrlUpdate(){ m_EventListUpdate->SetEvent(); }
 
 	// 아이피 입력 컨트롤 변수 및 함수
 	CIPAddressCtrl m_IPAddrCtrlBeginIP;
@@ -176,5 +171,6 @@ public:
 	// 프로그램 상태 확인
 	void SetProgramState(SCANNIG_STATE state) { m_ProgramState = state; }
 	int GetProgeamState() { return m_ProgramState; }
-	afx_msg void OnClose();
+	
+	
 };

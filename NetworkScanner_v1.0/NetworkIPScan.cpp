@@ -61,7 +61,6 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 
 	// 프로그램 상태바 업데이트
 	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_ARPSEND);
-	maindlg->ListCtrlUpdate();
 
 	// 네트워크 주소 계산
 	NICInfo *nicinfo = const_cast<NICInfo *>(sendsock->GetCurrentSelectNICInfo());
@@ -84,7 +83,6 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 
 	Sleep(500);
 	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_PINGSEND);
-	maindlg->ListCtrlUpdate();
 
 	for (i = 0; i < size; i++)
 	{
@@ -102,13 +100,10 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 		}
 		else*/
 			sendsock->SendICMPV4ECHORequest(ip);
-		maindlg->ListCtrlUpdate();
 	}
-	maindlg->ListCtrlUpdate();
 
 	Sleep(500);
-	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_PINGSEND);
-	maindlg->ListCtrlUpdate();
+	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_COMPLETE);
 
 	return 0;
 }
@@ -323,7 +318,6 @@ void CNetworkIPScan::IPStatusListInsertItem(uint32_t hbeginip, uint32_t hendip)
 		else
 			m_IPStatInfoList.InsertItem(index, htonl(hbeginip), mac, IPSTATUS::NOTUSING, false);
 	}
-	maindlg->ListCtrlDeleteAndInsert();
 }
 
 void CNetworkIPScan::IPStatusListDeleteItem(int index)

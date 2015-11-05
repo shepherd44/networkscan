@@ -6,6 +6,7 @@
 //#include "NetworkScanner.h"
 //#include "NetworkScannerDlg.h"
 #include "afxdialogex.h"
+#include "NetworkScannerDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -73,6 +74,7 @@ BEGIN_MESSAGE_MAP(CNetworkScannerDlg, CDialogEx)
 	ON_BN_CLICKED(ID_BTN_SCAN_REMOVEIP, &CNetworkScannerDlg::OnBnClickedBtnScanRemoveip)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_LIST_SCANRESULT, &CNetworkScannerDlg::OnListIPStatusCustomdraw)
 	ON_WM_CLOSE()
+	ON_NOTIFY(LVN_GETDISPINFO, IDC_LIST_SCANRESULT, &CNetworkScannerDlg::OnLvnGetdispinfoListScanresult)
 END_MESSAGE_MAP()
 
 
@@ -240,13 +242,8 @@ void CNetworkScannerDlg::OnBnClickedBtnScanAddip()
 	
 	m_NetworkIPScan.IPStatusListInsertItem(hbeginip, hendip);
 
-	// 리스트 컨트롤 아이템 지운 뒤 업데이트
-	ListCtrlDeleteAll();
 	int size = iplist->GetSize();
-	for (int i = 0; i < size; i++)
-	{
-		ListCtrlInsertData(iplist->At(i));
-	}
+	m_ListCtrlScanResult.SetItemCount(size);
 }
 void CNetworkScannerDlg::OnBnClickedBtnScanRemoveip()
 {
@@ -263,12 +260,9 @@ void CNetworkScannerDlg::OnBnClickedBtnScanRemoveip()
 	}
 
 	CIPStatusList *iplist = m_NetworkIPScan.GetIpStatusList();
+	
 	int size = iplist->GetSize();
-	ListCtrlDeleteAll();
-	for (int i = 0; i < size; i++)
-	{
-		ListCtrlInsertData(iplist->At(i));
-	}
+	m_ListCtrlScanResult.SetItemCount(size);
 }
 
 
@@ -353,105 +347,15 @@ void CNetworkScannerDlg::IPAddrCtrlInit()
 void CNetworkScannerDlg::ListCtrlInit()
 {
 	LISTCTRL_COULMNSTRING__;	// static wchar_t *ListCtrlColumnString[] 선언
-	ListCtrlDeleteAll();
 	
-	// 체크박스 체크방법
-	// SetCheck(i, false)
-	m_ListCtrlScanResult.SetExtendedStyle(LVS_EX_CHECKBOXES | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
-
+	ListView_SetExtendedListViewStyle(m_ListCtrlScanResult.m_hWnd, LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES | LVS_EX_GRIDLINES);
+	
 	// 열 설정
 	int i = 0, size = sizeof(LISTCTRL_COULMNSTRING_) / sizeof(wchar_t*);
 	m_ListCtrlScanResult.InsertColumn(i, LISTCTRL_COULMNSTRING(i++), LVCFMT_LEFT, LIST_COLUMN_NUMBER_LENGTH, -1);
 	m_ListCtrlScanResult.InsertColumn(i, LISTCTRL_COULMNSTRING(i++), LVCFMT_LEFT, LIST_COLUMN_NUMBER_LENGTH, -1);
 	for (; i < size; i++)
 		m_ListCtrlScanResult.InsertColumn(i, ListCtrlColumnString[i], LVCFMT_LEFT, LIST_COLUMN_LENGTH, -1);
-}
-void CNetworkScannerDlg::ListCtrlDeleteAll()
-{
-	m_ListCtrlScanResult.DeleteAllItems();
-}
-
-void CNetworkScannerDlg::ListCtrlDeleteAndInsert()
-{
-	CIPStatusList *iplist = m_NetworkIPScan.GetIpStatusList();
-	ListCtrlDeleteAll();
-	int size = iplist->GetSize();
-
-	for (int i = 0; i < size; i++)
-	{
-		ListCtrlInsertData(iplist->At(i));
-	}
-}
-// IP 입력 컨트롤 초기화
-void CNetworkScannerDlg::ListCtrlInsertData(IPStatusInfo *item)
-{
-	// 출력용 스트링 변수 배열
-	static wchar_t *ipstatstr[] =
-	{
-		TEXT("NOT USING"),
-		TEXT("USING"),
-		TEXT("GATEWAY"),
-		TEXT("IP DUPLICATION"),
-	};
-	
-	CString str;
-	int index = m_ListCtrlScanResult.GetItemCount();
-	// 1열 체크박스
-	m_ListCtrlScanResult.InsertItem(index, str);
-
-	// 2열 번호
-	str.Format(_T("%d"), index + 1);
-	m_ListCtrlScanResult.SetItem(index, 1, LVIF_TEXT, str, 0, 0, 0, NULL);
-
-	// 3열 IP Address 삽입
-	str.Format(_T("%d.%d.%d.%d"), (item->IPAddress) & 0xff, (item->IPAddress >> 8) & 0xff, (item->IPAddress >> 16) & 0xff, (item->IPAddress >> 24) & 0xff);
-	m_ListCtrlScanResult.SetItem(index, 2, LVIF_TEXT, str, 0, 0, 0, NULL);
-
-	// 4열 MAC  삽입
-	str.Format(_T("%02X:%02X:%02X:%02X:%02X:%02X"), item->MACAddress[0], item->MACAddress[1], item->MACAddress[2], 
-		item->MACAddress[3], item->MACAddress[4], item->MACAddress[5]);
-	m_ListCtrlScanResult.SetItem(index, 3, LVIF_TEXT, str, 0, 0, 0, NULL);
-
-	// 5열 IP Status 삽입
-	str.Format(ipstatstr[item->IPStatus]);
-	m_ListCtrlScanResult.SetItem(index, 4, LVIF_TEXT, str, 0, 0, 0, NULL);
-
-	// 6열 Ping
-	str.Format(_T("%s"), item->PingReply ? "O" :"X");
-	m_ListCtrlScanResult.SetItem(index, 5, LVIF_TEXT, str, 0, 0, 0, NULL);
-}
-void CNetworkScannerDlg::ListCtrlUpdateData(int index, IPStatusInfo *item)
-{
-	// 출력용 스트링 변수 배열
-	static wchar_t *ipstatstr[] =
-	{
-		TEXT("NOT USING"),
-		TEXT("USING"),
-		TEXT("GATEWAY"),
-		TEXT("IP DUPLICATION"),
-	};
-
-	CString str;
-	int listsize = m_ListCtrlScanResult.GetItemCount();
-	if (index > listsize)
-		throw std::exception("리스트의 아이템 사이즈보다 큰 인덱스입니다.");
-	
-	// 3열 IP Address 삽입
-	str.Format(_T("%d.%d.%d.%d"), (item->IPAddress) & 0xff, (item->IPAddress >> 8) & 0xff, (item->IPAddress >> 16) & 0xff, (item->IPAddress >> 24) & 0xff);
-	m_ListCtrlScanResult.SetItem(index, 2, LVIF_TEXT, str, 0, 0, 0, NULL);
-
-	// 4열 MAC  삽입
-	str.Format(_T("%02X:%02X:%02X:%02X:%02X:%02X"), item->MACAddress[0], item->MACAddress[1], item->MACAddress[2],
-		item->MACAddress[3], item->MACAddress[4], item->MACAddress[5]);
-	m_ListCtrlScanResult.SetItem(index, 3, LVIF_TEXT, str, 0, 0, 0, NULL);
-
-	// 5열 IP Status 삽입
-	str.Format(ipstatstr[item->IPStatus]);
-	m_ListCtrlScanResult.SetItem(index, 4, LVIF_TEXT, str, 0, 0, 0, NULL);
-
-	// 6열 Ping
-	str.Format(_T("%s"), item->PingReply ? "O" : "X");
-	m_ListCtrlScanResult.SetItem(index, 5, LVIF_TEXT, str, 0, 0, 0, NULL);
 }
 
 // 리스트 컨트롤 통지 함수(Customdraw)
@@ -499,7 +403,6 @@ void CNetworkScannerDlg::StartListUpdateThread()
 	if (m_ListUpdateThread == NULL)
 	{
 		m_IsListUpdateThreadDye = false;
-		m_EventListUpdate = new CEvent(FALSE, FALSE);
 		LPVOID param = &m_IsListUpdateThreadDye;
 		m_ListUpdateThread = AfxBeginThread(ListUpdateThreadFunc, param, 0, 0, 0);
 	}
@@ -513,9 +416,6 @@ void CNetworkScannerDlg::EndListUpdateThread()
 	if (m_ListUpdateThread != NULL)
 	{
 		m_IsListUpdateThreadDye = true;
-		// 이벤트 전송 풀기
-		m_EventListUpdate->Unlock();
-		//WaitForSingleObject(m_ListUpdateThread->m_hThread, INFINITE);
 
 		m_ListUpdateThread = NULL;
 	}
@@ -532,19 +432,12 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 		maindlg->StatusBarCtrlUpdate();
 
 		int size = iplist->GetSize();
-		for (int i = 0; i < size; i++)
-		{
-			// 종료 메시지 확인
-			if (*isdye)
-				break;
-			maindlg->ListCtrlUpdateData(i, iplist->At(i));
-		}
+		maindlg->m_ListCtrlScanResult.SetItemCount(size);
 		
-
 		// 종료 메시지 확인
 		for (int i = 0; i < 10; i++)
 		{
-			Sleep(100);
+			Sleep(1000);
 			if (*isdye)
 				break;
 		}
@@ -561,4 +454,63 @@ void CNetworkScannerDlg::OnClose()
 	EndListUpdateThread();
 
 	CDialogEx::OnClose();
+}
+
+
+void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	NMLVDISPINFO *pDispInfo = reinterpret_cast<NMLVDISPINFO*>(pNMHDR);
+	
+	// 출력용 스트링 변수 배열
+	static wchar_t *ipstatstr[] =
+	{
+		TEXT("NOT USING"),
+		TEXT("USING"),
+		TEXT("GATEWAY"),
+		TEXT("IP DUPLICATION"),
+	};
+
+	CString str;
+	IPStatusInfo *ipstat;
+	LV_ITEM* pItem = &(pDispInfo)->item;
+
+	int itemid = pItem->iItem;
+	int index = pItem->iItem;
+	ipstat = m_NetworkIPScan.GetIpStatusList()->At(index);
+	if (pItem->mask & LVIF_TEXT)
+	{
+		switch (pItem->iSubItem)
+		{
+		case 0:
+			break;
+		case 1:	// 인덱스
+			str.Format(_T("%d"), index + 1);
+			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);
+			break;
+		case 2:	// ip
+			str.Format(_T("%d.%d.%d.%d"), (ipstat->IPAddress) & 0xff, (ipstat->IPAddress >> 8) & 0xff, (ipstat->IPAddress >> 16) & 0xff, (ipstat->IPAddress >> 24) & 0xff);
+			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);
+			break;
+		case 3:
+			str.Format(_T("%02X:%02X:%02X:%02X:%02X:%02X"), ipstat->MACAddress[0], ipstat->MACAddress[1], ipstat->MACAddress[2],
+				ipstat->MACAddress[3], ipstat->MACAddress[4], ipstat->MACAddress[5]);
+			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);
+			break;
+		case 4:
+			str.Format(ipstatstr[ipstat->IPStatus]);
+			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);
+			break;
+		case 5:
+			str.Format(_T("%s"), ipstat->PingReply ? "O" : "X");
+			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);
+			break;
+		default:
+			break;
+		}
+	}
+	if (pItem->mask & LVIF_IMAGE)
+	{
+
+	}
+	*pResult = 0;
 }
