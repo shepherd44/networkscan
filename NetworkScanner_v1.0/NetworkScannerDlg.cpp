@@ -173,8 +173,7 @@ HCURSOR CNetworkScannerDlg::OnQueryDragIcon()
 
 void CNetworkScannerDlg::OnBnClickedBtnScan()
 {
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	
+	m_ProgramState = SCANNIG_STATE::SCANNIG;
 	// 버튼 클릭 제한
 	// NIC 선택창
 	CButton *btn = (CButton *)GetDlgItem(ID_BTN_NICDETAIL);
@@ -193,8 +192,8 @@ void CNetworkScannerDlg::OnBnClickedBtnScan()
 }
 void CNetworkScannerDlg::OnBnClickedBtnStopAll()
 {
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-
+	// 프로그램 상태 변경
+	m_ProgramState = SCANNIG_STATE::STOP_ALL;
 	// 패킷 전송 스레드 중지
 	m_NetworkIPScan.EndSend();
 	// 패킷 캡처 스레드 중지
@@ -208,12 +207,12 @@ void CNetworkScannerDlg::OnBnClickedBtnStopAll()
 }
 void CNetworkScannerDlg::OnBnClickedBtnStopSend()
 {
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	m_ProgramState = SCANNIG_STATE::STOP_SEND;
 	m_NetworkIPScan.EndSend();
 }
 void CNetworkScannerDlg::OnBnClickedBtnStopRecv()
 {
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	m_ProgramState = SCANNIG_STATE::STOP_RECV;
 	m_NetworkIPScan.EndCapture();
 }
 // NIC Information 자세히 보기 버튼 처리
@@ -226,7 +225,6 @@ void CNetworkScannerDlg::OnBnClickedBtnNicdetail()
 }
 void CNetworkScannerDlg::OnBnClickedBtnScanAddip()
 {
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	CIPStatusList *iplist = m_NetworkIPScan.GetIpStatusList();
 	u_long hbeginip, hendip;
 	uint8_t mac[MACADDRESS_LENGTH];
@@ -278,6 +276,7 @@ void CNetworkScannerDlg::OnBnClickedBtnScanRemoveip()
 //--------------------------------------------------------------
 void CNetworkScannerDlg::InitializeAll()
 {
+	m_ProgramState = SCANNIG_STATE::BEGIN;
 	ListCtrlInit();
 	IPAddrCtrlInit();
 	StatusBarCtrlInit();
@@ -554,7 +553,7 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 
 void CNetworkScannerDlg::OnClose()
 {
-	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+	m_ProgramState = SCANNIG_STATE::PROGRAM_END;
 	// 쓰레드 중지
 	m_NetworkIPScan.EndSend();
 	m_NetworkIPScan.EndCapture();
