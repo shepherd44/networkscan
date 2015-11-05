@@ -24,6 +24,16 @@ void CNetworkIPScan::Scan(int nicindex)
 	m_SendSock.OpenNetDevice(nicindex);
 	m_CaptureSock.OpenNetDevice(m_SendSock.GetCurrentSelectNICName());
 
+	// NIC IP가 스캔 범위 내부이면 확인 후 저장
+	NICInfo *nicinfo = const_cast<NICInfo *>(m_SendSock.GetCurrentSelectNICInfo());
+	int index = m_IPStatInfoList.IsInItem(nicinfo->NICIPAddress);
+	if (index != -1)
+		m_IPStatInfoList.UpdateItem(index, nicinfo->NICIPAddress, nicinfo->NICMACAddress, IPSTATUS::USING, false);
+	// GateWayIP가 스캔 범위 내부이면 확인 후 저장
+	index = m_IPStatInfoList.IsInItem(nicinfo->GatewayIPAddress);
+	if (index != -1)
+		m_IPStatInfoList.UpdateItemIPStat(index, IPSTATUS::USING_GATEWAY);
+
 	// 패킷 캡처 스레드 시작(분석 함께 함)
 	StartCapture();
 
