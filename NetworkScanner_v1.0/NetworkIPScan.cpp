@@ -36,6 +36,7 @@ void CNetworkIPScan::Scan(int nicindex)
 // 패킷 전송 스레드 함수
 UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 {
+	// 파라미터 가져오기
 	CNetworkScannerDlg *maindlg = (CNetworkScannerDlg *)(AfxGetApp()->GetMainWnd());
 	CWPcapSendSocket *sendsock = (CWPcapSendSocket *)((struct ThreadParams*)lpParam)->socket;
 	bool *isdye = (bool *)((struct ThreadParams*)lpParam)->isend;
@@ -190,22 +191,30 @@ void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 	int index;
 	uint8_t mac[MACADDRESS_LENGTH] = { 0, };
 
-	switch (iph->protoid)
+	// 패킷 전송ip가 결과 리스트 안에 있는지 확인
+	memcpy(&ip, iph->srcaddr, IPV4ADDRESS_LENGTH);
+	index = ipstatlist->IsInItem(ip);
+	if (index == -1)
+		return;
+	else
 	{
-	case IPV4TYPE::ICMP:
-		memcpy(&ip, iph->srcaddr, IPV4ADDRESS_LENGTH);
-		index = ipstatlist->IsInItem(ip);
-		if (index != -1)
+		switch (iph->protoid)
 		{
-			IPSTATUS status = ipstatlist->At(index)->IPStatus;
-			if (status == IPSTATUS::NOTUSING)
-				ipstatlist->UpdateItemPingStat(index, IPSTATUS::USING, TRUE);
-			else
-				ipstatlist->UpdateItemPingStat(index, status, TRUE);
+			case IPV4TYPE::ICMP:
+			{
+				IPSTATUS status = ipstatlist->At(index)->IPStatus;
+
+				// NOTUSING 상태일 경우 USING으로 바꾸고
+				if (status == IPSTATUS::NOTUSING)
+					ipstatlist->UpdateItemPingStat(index, IPSTATUS::USING, TRUE);
+				// 아닐경우 status를 그대로 가져간다.
+				else
+					ipstatlist->UpdateItemPingStat(index, status, TRUE);
+				break;
+			}
+			default:
+				break;
 		}
-		break;
-	default:
-		break;
 	}
 }
 
