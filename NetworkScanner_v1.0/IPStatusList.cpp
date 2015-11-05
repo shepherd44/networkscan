@@ -133,11 +133,11 @@ int CIPStatusList::IsInItem(uint32_t ip)
 {
 	int ret = 0;
 	PListHead ph = m_ListHead.next;
-	uint32_t *itemip;
+	uint32_t itemip;
 	for (; ph != &m_ListHead; ph = ph->next, ret++)
 	{
-		itemip = (uint32_t *)GET_LIST_ITEM(ph, IPStatusInfo, list);
-		if (*itemip == ip)
+		itemip = GET_LIST_ITEM(ph, IPStatusInfo, list)->IPAddress;
+		if (itemip == ip)
 			return ret;
 	}
 	return -1;

@@ -111,14 +111,18 @@ pcap_if_t* ChosenDevice;
 TEST_F(CWPcapSocketTest, SendSocket_SetICMPV4ECHO)
 {
 	m_sendsock.OpenNetDevice(0);
-	uint32_t dst = inet_addr("172.16.5.201");
+	uint32_t dst = inet_addr("172.16.5.60");
 	int ret = pcap_datalink(m_sendsock.m_pCapHandler);
 	ASSERT_EQ(DLT_EN10MB, ret);
-	while (1)
+	//while (1)
 	{
-		m_sendsock.SendUDP();
+		//m_sendsock.SendUDP();
 		m_sendsock.SendICMPV4ECHORequest(dst);
-	//	m_sendsock.SendPingInWin(dst);
+		m_sendsock.SendICMPV4ECHORequest(dst);
+		m_sendsock.SendICMPV4ECHORequest(dst);
+		m_sendsock.SendICMPV4ECHORequest(dst);
+		m_sendsock.SendICMPV4ECHORequest(dst);
+		//m_sendsock.SendPingInWin(dst);
 		Sleep(1000);
 	}
 }

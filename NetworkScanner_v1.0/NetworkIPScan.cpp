@@ -73,14 +73,15 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 	}
 
 	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_PINGSEND);
+	maindlg->ListCtrlUpdate();
 	for (i = 0; i < size; i++)
 	{
 		// 스레드 종료 확인
 		if (*isdye)
 			return 0;
-		sendsock->SendPingInWin(iplist->At(i)->IPAddress);
-		maindlg->ListCtrlUpdate();
+		sendsock->SendICMPV4ECHORequest(iplist->At(i)->IPAddress);
 	}
+	maindlg->ListCtrlUpdate();
 	
 	return 0;
 }
@@ -209,6 +210,7 @@ void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 	index = ipstatlist->IsInItem(ip);
 	if (index == -1)
 		return;
+
 	else
 	{
 		switch (iph->protoid)

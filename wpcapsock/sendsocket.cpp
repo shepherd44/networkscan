@@ -43,22 +43,17 @@ int CWPcapSendSocket::SetETHHeaderWithARP(uint8_t *packet, uint8_t *src, uint16_
 				break;
 			}
 		}
-		// ARP 응답 있으면 해당 맥주소 셋팅
+		// ARP 테이블에 있으면 해당 맥주소 셋팅
 		if (i < pMib->dwNumEntries)
-		{
 			SetETHHeader(packet, dstmac, m_NICInfoList.At(m_CurSel)->NICMACAddress, prototype);
-		}// 없으면 ARP 요청
+		// 없으면 ARP 요청
 		else
-		{
-			if (GetDstMAC(dstmac, dstip, 1000))
-			{
-				return -1;
-			}// ARP 응답 없으면 셋팅 안하고 종료
+			if (GetDstMAC(dstmac, dstip, 1000) == -1)
+				goto error;
+			// ARP 응답 없으면 셋팅 안하고 종료
 			else
-			{
 				SetETHHeader(packet, dstmac, m_NICInfoList.At(m_CurSel)->NICMACAddress, prototype);
-			}
-		}	
+		goto end;
 	}// 외부일 경우 ARP 테이블에서 게이트웨이 맥주소 가져온다
 	else
 	{
@@ -69,12 +64,21 @@ int CWPcapSendSocket::SetETHHeaderWithARP(uint8_t *packet, uint8_t *src, uint16_
 			{
 				memcpy(dstmac, pMib->table[i].bPhysAddr, pMib->table[i].dwPhysAddrLen);
 				SetETHHeader(packet, dstmac, m_NICInfoList.At(m_CurSel)->NICMACAddress, prototype);
-				return 0;
+				goto end;
 			}
 		}
-		return -1;
+		goto error;
 	}
+
+// 정상 종료
+end:
+	free(pMib);
 	return 0;
+
+// ARP 응답 없음
+error:
+	free(pMib);
+	return -1;
 }
 
 void CWPcapSendSocket::SetETHHeader(uint8_t *packet, uint8_t *dst, uint8_t *src, uint16_t prototype)
@@ -254,8 +258,8 @@ void CWPcapSendSocket::SendPingInWin(uint32_t dstip)
 	return ;
 
 	dwRetVal = IcmpSendEcho(hIcmpFile, dstip, SendData, sizeof(SendData),
-	NULL, ReplyBuffer, ReplySize, 100);
-
+	NULL, ReplyBuffer, ReplySize, -1);
+	
 	//CloseHandle(hIcmpFile);
 	free(ReplyBuffer);
 }
@@ -282,7 +286,7 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 	SetICMPV4Packet(picmp, ICMPV4TYPE::ICMPV4_ECHO_REQUEST,	0, rand()%0x10000, 0x0000, data, datalen);
 	free(data);
 
-	// IP 헤더 셋팅(-단편화 고려 x-)
+	// IP 헤더 셋팅
 	uint8_t *pip = packet + ethlen;
 	datalen += ICMPV4HEADER_LENGTH;
 	SetIPPacket(
@@ -292,7 +296,7 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 		0x0000,
 		128,
 		IPV4TYPE::ICMP,
-		false,
+		true,
 		(uint8_t *)&nicinfo->NICIPAddress,
 		(uint8_t *)&dstip,
 		(uint8_t *)picmp,
@@ -302,6 +306,7 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 	SetETHHeaderWithARP(packet, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4), dstip);
 	// 패킷 전송
 	int ret = SendPacket(packet, packetlen);
+	free(packet);
 	return ret;
 }
 
