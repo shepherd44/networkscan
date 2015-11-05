@@ -45,7 +45,6 @@ void CNetworkIPScan::Scan(int nicindex)
 	// 패킷 전송 스레드 시작
 	StartSend();
 
-
 }
 
 // 패킷 전송 스레드 함수
@@ -60,8 +59,16 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 	if (*isdye)
 		return 0;
 
+	// 프로그램 상태바 업데이트
 	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_ARPSEND);
 	maindlg->ListCtrlUpdate();
+
+	// 네트워크 주소 계산
+	NICInfo *nicinfo = const_cast<NICInfo *>(sendsock->GetCurrentSelectNICInfo());
+	uint32_t hnetmask = ntohl(nicinfo->Netmask);
+	uint32_t hstartnetwork = hnetmask & ntohl(nicinfo->NICIPAddress);
+	uint32_t hendnetwork = hstartnetwork + ~hnetmask;
+	uint32_t ip, hip;
 	int size = iplist->GetSize();
 	int i = 0;
 	for (; i < size; i++)
@@ -69,20 +76,40 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 		// 스레드 종료 확인
 		if (*isdye)
 			return 0;
-		sendsock->SendARPRequest(iplist->At(i)->IPAddress);
+		ip = iplist->At(i)->IPAddress;
+		hip = ntohl(ip);
+		if ( hip >= hstartnetwork && hip <= hendnetwork )
+			sendsock->SendARPRequest(ip);
 	}
 
+	Sleep(500);
 	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_PINGSEND);
 	maindlg->ListCtrlUpdate();
+
 	for (i = 0; i < size; i++)
 	{
 		// 스레드 종료 확인
 		if (*isdye)
 			return 0;
-		sendsock->SendICMPV4ECHORequest(iplist->At(i)->IPAddress);
+		ip = iplist->At(i)->IPAddress;
+		hip = ntohl(ip);
+		/*if (hip >= hstartnetwork && hip <= hendnetwork)
+		{
+			if (strncmp((char*)iplist->At(i)->MACAddress, "\x000000", MACADDRESS_LENGTH) == 0)
+				continue;
+			else
+				sendsock->SendICMPV4ECHORequest(ip);
+		}
+		else*/
+			sendsock->SendICMPV4ECHORequest(ip);
+		maindlg->ListCtrlUpdate();
 	}
 	maindlg->ListCtrlUpdate();
-	
+
+	Sleep(500);
+	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_PINGSEND);
+	maindlg->ListCtrlUpdate();
+
 	return 0;
 }
 void CNetworkIPScan::StartSend()

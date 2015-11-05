@@ -248,7 +248,6 @@ void CNetworkScannerDlg::OnBnClickedBtnScanAddip()
 		ListCtrlInsertData(iplist->At(i));
 	}
 }
-
 void CNetworkScannerDlg::OnBnClickedBtnScanRemoveip()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
@@ -455,7 +454,7 @@ void CNetworkScannerDlg::ListCtrlUpdateData(int index, IPStatusInfo *item)
 	m_ListCtrlScanResult.SetItem(index, 5, LVIF_TEXT, str, 0, 0, 0, NULL);
 }
 
-// 리스트 컨트롤 통지 함수
+// 리스트 컨트롤 통지 함수(Customdraw)
 afx_msg void CNetworkScannerDlg::OnListIPStatusCustomdraw(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	IPSTATUS_CELLCOLOR__;		// static COLORREF ipstatcolor[] 선언
@@ -467,10 +466,12 @@ afx_msg void CNetworkScannerDlg::OnListIPStatusCustomdraw(NMHDR* pNMHDR, LRESULT
 	else if (pLVCD->nmcd.dwDrawStage == CDDS_ITEMPREPAINT)
 	{
 		int nItem = static_cast<int>(pLVCD->nmcd.dwItemSpec);
+		
 		// 색 지정
 		IPStatusInfo *item = m_NetworkIPScan.GetIpStatusList()->At(nItem);
 		pLVCD->clrTextBk = IPSTATUS_CELLCOLOR(item->IPStatus);
 		*pResult = CDRF_DODEFAULT;
+		
 	}
 }
 
@@ -499,6 +500,7 @@ void CNetworkScannerDlg::StartListUpdateThread()
 	if (m_ListUpdateThread == NULL)
 	{
 		m_IsListUpdateThreadDye = false;
+		m_EventListUpdate = new CEvent(FALSE, FALSE);
 		LPVOID param = &m_IsListUpdateThreadDye;
 		m_ListUpdateThread = AfxBeginThread(ListUpdateThreadFunc, param, 0, 0, 0);
 	}
@@ -513,8 +515,8 @@ void CNetworkScannerDlg::EndListUpdateThread()
 	{
 		m_IsListUpdateThreadDye = true;
 		// 이벤트 전송 풀기
-		m_EventListUpdate.SetEvent();
-		WaitForSingleObject(m_ListUpdateThread->m_hThread, INFINITE);
+		m_EventListUpdate->Unlock();
+		//WaitForSingleObject(m_ListUpdateThread->m_hThread, INFINITE);
 
 		m_ListUpdateThread = NULL;
 	}
@@ -526,10 +528,7 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 	CIPStatusList *iplist = (maindlg->m_NetworkIPScan.GetIpStatusList());
 	while (1)
 	{
-		maindlg->m_EventListUpdate.Lock();
-		// 종료 메시지 확인
-		if (*isdye)
-			break;
+		//maindlg->m_EventListUpdate->Lock();
 		
 		maindlg->StatusBarCtrlUpdate();
 		int size = iplist->GetSize();
@@ -539,6 +538,14 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 			if (*isdye)
 				break;
 			maindlg->ListCtrlUpdateData(i, iplist->At(i));
+		}
+
+		// 종료 메시지 확인
+		for (int i = 0; i < 10; i++)
+		{
+			Sleep(100);
+			if (*isdye)
+				break;
 		}
 	}
 	return 0;

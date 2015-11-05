@@ -99,12 +99,12 @@ protected:
 	void InitializeAll();
 
 	// 리스트 컨트롤 업데이트 지시 이벤트 변수
-	CEvent m_EventListUpdate;
+	CEvent *m_EventListUpdate;
 	// 리스트 컨트롤 업데이트 쓰레드
 	CWinThread *m_ListUpdateThread;
 	// 리스트 컨트롤 중지용 변수
 	bool m_IsListUpdateThreadDye;
-	
+
 	// 리스트 컨트롤 업데이트 쓰레드 시작
 	void StartListUpdateThread();
 	// 리스트 컨트롤 업데이트 쓰레드 중지
@@ -145,7 +145,7 @@ public:
 	// 리스트 컨트롤 업데이트 
 	bool IsListUpdateThreadDye() { return m_IsListUpdateThreadDye; }
 	// 리스트 컨트롤 업데이트 지시(이벤트 시그널 발생)
-	void ListCtrlUpdate(){ m_EventListUpdate.SetEvent(); }
+	void ListCtrlUpdate(){ m_EventListUpdate->SetEvent(); }
 
 	// 아이피 입력 컨트롤 변수 및 함수
 	CIPAddressCtrl m_IPAddrCtrlBeginIP;
@@ -173,6 +173,7 @@ public:
 	// NIC 선택용 콤보 박스
 	void ComboBoxInit();
 
+	// 프로그램 상태 확인
 	void SetProgramState(SCANNIG_STATE state) { m_ProgramState = state; }
 	int GetProgeamState() { return m_ProgramState; }
 	afx_msg void OnClose();

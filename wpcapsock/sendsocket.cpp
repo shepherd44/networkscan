@@ -48,7 +48,7 @@ int CWPcapSendSocket::SetETHHeaderWithARP(uint8_t *packet, uint8_t *src, uint16_
 			SetETHHeader(packet, dstmac, m_NICInfoList.At(m_CurSel)->NICMACAddress, prototype);
 		// 없으면 ARP 요청
 		else
-			if (GetDstMAC(dstmac, dstip, 1000) == -1)
+			if (GetDstMAC(dstmac, dstip, 500) == -1)
 				goto error;
 			// ARP 응답 없으면 셋팅 안하고 종료
 			else
@@ -147,7 +147,7 @@ int CWPcapSendSocket::GetDstMAC(uint8_t *dstmac, uint32_t dstip, uint32_t timeou
 	uint32_t endtime;
 
 	// ARP 요청을 보낸 뒤 확인
-	for (int n = 0; n < 5; n++)
+	//for (int n = 0; n < 5; n++)
 	{
 		// ARP 요청
 		SendARPRequest(dstip);
