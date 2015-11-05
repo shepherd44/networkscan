@@ -471,7 +471,6 @@ afx_msg void CNetworkScannerDlg::OnListIPStatusCustomdraw(NMHDR* pNMHDR, LRESULT
 		IPStatusInfo *item = m_NetworkIPScan.GetIpStatusList()->At(nItem);
 		pLVCD->clrTextBk = IPSTATUS_CELLCOLOR(item->IPStatus);
 		*pResult = CDRF_DODEFAULT;
-		
 	}
 }
 
@@ -531,6 +530,7 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 		//maindlg->m_EventListUpdate->Lock();
 		
 		maindlg->StatusBarCtrlUpdate();
+
 		int size = iplist->GetSize();
 		for (int i = 0; i < size; i++)
 		{
@@ -539,6 +539,7 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 				break;
 			maindlg->ListCtrlUpdateData(i, iplist->At(i));
 		}
+		
 
 		// 종료 메시지 확인
 		for (int i = 0; i < 10; i++)
