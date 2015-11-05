@@ -43,11 +43,12 @@
 // 버튼 클릭 상태 처리용 enum
 enum SCANNIG_STATE
 {
-	BEGIN = 0,	// 0, 처음 시작시
-	SCANNIG,	// 1, 스캔 시작 시
-	STOP_ALL,	// 4, 패킷 전송, 캡처 모두 중지
-	STOP_SEND,	// 2, IP 상태 확인용 패킷 전송 중지
-	STOP_RECV,	// 3, 패킷 캡처 및 분석 중지
+	BEGIN = 0,		// 0, 처음 시작시
+	SCANNIG,		// 1, 스캔 시작 시
+	STOP_ALL,		// 2, 패킷 전송, 캡처 모두 중지
+	STOP_SEND,		// 3, IP 상태 확인용 패킷 전송 중지
+	STOP_RECV,		// 4, 패킷 캡처 및 분석 중지
+	PROGRAM_END,	// 5
 
 	SCANNING_STATE_END	// END
 };
@@ -79,13 +80,22 @@ protected:
 protected:
 	void InitializeAll();
 
+	// 리스트 컨트롤 업데이트 지시 이벤트 변수
 	CEvent m_EventListUpdate;
+	// 리스트 컨트롤 업데이트 쓰레드
 	CWinThread *m_ListUpdateThread;
+	// 리스트 컨트롤 중지용 변수
 	bool m_IsListUpdateThreadDye;
 	
+	// 리스트 컨트롤 업데이트 쓰레드 시작
 	void StartListUpdateThread();
+	// 리스트 컨트롤 업데이트 쓰레드 중지
 	void EndListUpdateThread();
+	// 리스트 컨트롤 업데이드 쓰레드 함수
 	static UINT AFX_CDECL ListUpdateThreadFunc(LPVOID lpParam);
+
+	// 프로그램 상태
+	SCANNIG_STATE m_ProgramState;
 
 // 컨트롤 변수 및 함수
 public:
@@ -95,30 +105,43 @@ public:
 	afx_msg void OnBnClickedBtnStopSend();		// 패킷 전송 중지
 	afx_msg void OnBnClickedBtnStopRecv();		// 패킷 캡처 중지
 	afx_msg void OnBnClickedBtnNicdetail();		// NIC 정보 자세히 보기
-	afx_msg void OnBnClickedBtnScanAddip();
-	afx_msg void OnBnClickedBtnScanRemoveip();
+	afx_msg void OnBnClickedBtnScanAddip();		// IP 추가
+	afx_msg void OnBnClickedBtnScanRemoveip();	// IP 제거
 
 	// 리스트 컨트롤 변수 및 함수
 	CListCtrl m_ListCtrlScanResult;
+	// 리스트 컨트롤 유저 지정 통지 함수
 	afx_msg void OnListIPStatusCustomdraw(NMHDR* pNMHDR, LRESULT* pResult);
+	// 리스트 컨트롤 초기화 함수
 	void ListCtrlInit();
+	// 리스트 컨트롤 비우기
 	void ListCtrlDeleteAll();
+	// 리스트 컨트롤 비우고 결과 버퍼에서 업데이트
 	void ListCtrlDeleteAndInsert();
+	// 리스트 컨트롤에 아이템 삽입(Tail)
 	void ListCtrlInsertData(IPStatusInfo *item);
+	// 리스트 컨트롤 항목 갱신 함수
 	void ListCtrlUpdateData(int index, IPStatusInfo *item);
+	// 체크박스로 체크된 항목 가져오기
 	int *GetCheckedItem();
+	// 리스트 컨트롤 업데이트 
 	bool IsListUpdateThreadDye() { return m_IsListUpdateThreadDye; }
+	// 리스트 컨트롤 업데이트 지시(이벤트 시그널 발생)
 	void ListCtrlUpdate(){ m_EventListUpdate.SetEvent(); }
 
 	// 아이피 입력 컨트롤 변수 및 함수
 	CIPAddressCtrl m_IPAddrCtrlBeginIP;
 	CIPAddressCtrl m_IPAddrCtrlEndIP;
+	// 아이피 입력 컨트롤 초기화
 	void IPAddrCtrlInit();
 
 	// 스테이터스바 컨트롤 변수 및 함수
 	CStatusBarCtrl m_StatusBarCtrl;
+	// 스테이터스바 컨트롤 초기화
 	void StatusBarCtrlInit();
-	void StatusBarCtrlUpdate(int index, wchar_t* string);
+	// 스테이터스바 컨트롤 업데이트
+	void StatusBarCtrlUpdate();
+	void StatusBarCtrlUpdate(wchar_t* string);
 
 	// 체크박스 컨트롤 변수 및 함수
 	CButton m_CheckBoxCtrlIsHideDeadIP;		// HideDeadIP

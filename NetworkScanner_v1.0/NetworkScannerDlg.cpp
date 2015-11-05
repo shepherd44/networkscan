@@ -42,9 +42,7 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 END_MESSAGE_MAP()
 
-
 // CNetworkScannerDlg 대화 상자
-
 
 CNetworkScannerDlg::CNetworkScannerDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CNetworkScannerDlg::IDD, pParent)
@@ -178,17 +176,20 @@ void CNetworkScannerDlg::OnBnClickedBtnScan()
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	
 	// 버튼 클릭 제한
+	// NIC 선택창
 	CButton *btn = (CButton *)GetDlgItem(ID_BTN_NICDETAIL);
 	btn->EnableWindow(FALSE);
+	btn = (CButton *)GetDlgItem(ID_BTN_NICDETAIL);
+	btn->EnableWindow(FALSE);
+
 	// 콤보박스 클릭 제한
 	m_ComboCtrlNICInfo.EnableWindow(FALSE);
 	
-	// 
+	// 현재 선택된 인터페이스
 	int nicindex = m_ComboCtrlNICInfo.GetCurSel();
 
 	// 스캔 시작
 	m_NetworkIPScan.Scan(nicindex);
-
 }
 void CNetworkScannerDlg::OnBnClickedBtnStopAll()
 {
@@ -481,6 +482,23 @@ void CNetworkScannerDlg::StatusBarCtrlInit()
 	m_StatusBarCtrl.SetParts(1, strPartDim);
 	m_StatusBarCtrl.SetText(_T("Program Start. Scannig Available"), 0, 0);
 	m_StatusBarCtrl.SetIcon(2, SetIcon(AfxGetApp()->LoadIcon(IDR_MAINFRAME), FALSE));
+}
+void CNetworkScannerDlg::StatusBarCtrlUpdate()
+{
+	static wchar_t *statusbarstring[] =
+	{
+		_T("Program start. Scannig Available"),
+		_T("Scan start. Sending Packet."),
+		_T("Stop scannig"),
+		_T("Stop send packet"),
+		_T("Stop captue packet"),
+		_T("Program End. Wait...")
+	};
+	StatusBarCtrlUpdate(statusbarstring[m_ProgramState]);
+}
+void CNetworkScannerDlg::StatusBarCtrlUpdate(wchar_t* string)
+{
+	m_StatusBarCtrl.SetText(string, 0, 0);
 }
 
 void CNetworkScannerDlg::StartListUpdateThread()
