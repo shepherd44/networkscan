@@ -29,11 +29,16 @@ void CNetworkIPScan::Scan(int nicindex)
 	int index = m_IPStatInfoList.IsInItem(nicinfo->NICIPAddress);
 	if (index != -1)
 		m_IPStatInfoList.UpdateItem(index, nicinfo->NICIPAddress, nicinfo->NICMACAddress, IPSTATUS::USING, false);
+
 	// GateWayIP가 스캔 범위 내부이면 확인 후 저장
+	uint8_t mac[MACADDRESS_LENGTH] = { 0, };
 	index = m_IPStatInfoList.IsInItem(nicinfo->GatewayIPAddress);
 	if (index != -1)
-		m_IPStatInfoList.UpdateItemIPStat(index, IPSTATUS::USING_GATEWAY);
-
+	{
+		m_SendSock.GetDstMAC(mac, nicinfo->GatewayIPAddress, 1000);
+		m_IPStatInfoList.UpdateItem(index, nicinfo->GatewayIPAddress, mac, IPSTATUS::USING_GATEWAY, false);
+	}
+		
 	// 패킷 캡처 스레드 시작(분석 함께 함)
 	StartCapture();
 
@@ -159,10 +164,9 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 		if (dstip == myip)
 		{
 			memcpy(mac, arpp->shaddr, MACADDRESS_LENGTH);
-			
 			index = ipstatlist->IsInItem(senderip);
-			IPStatusInfo *temp = ipstatlist->At(index);
-			switch (temp->IPStatus)
+			IPStatusInfo *item = ipstatlist->At(index);
+			switch (item->IPStatus)
 			{
 			case IPSTATUS::NOTUSING:
 				ipstatlist->UpdateItemARPInfo(index, mac, USING);
@@ -170,10 +174,8 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 			case IPSTATUS::USING:
 			case IPSTATUS::USING_GATEWAY:
 			case IPSTATUS::IPDUPLICATION:
-				if (strncmp((char*)temp->MACAddress, (char*)mac, 6) == 0)
-				{
+				if (strncmp((char*)item->MACAddress, (char*)mac, 6) == 0)
 					break;
-				}
 				else
 				{
 					ipstatlist->UpdateItemIPStat(index, IPDUPLICATION);
