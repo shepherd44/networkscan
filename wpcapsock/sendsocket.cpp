@@ -211,7 +211,8 @@ void CWPcapSendSocket::SetIPPacket(
 
 	if (ischeck)
 	{
-		piph->checksum = IPHeaderChecksum(piph->headerlen, (uint16_t*)piph);
+		
+		piph->checksum = IPHeaderChecksum(headerlen, (uint8_t*)piph);
 		piph->checksum = htons(piph->checksum);
 	}
 }
@@ -275,16 +276,8 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 	uint16_t i = 0;
 	
 	memset(data, 0, datalen);
-	data[0] = 0x44;
-	data[1] = 0x61;
-	data[2] = 0x74;
-	data[3] = 0x61;
-	data[4] = 0x20;
-	data[5] = 0x42;
-	data[6] = 0x75;
-	data[7] = 0x66;
-	data[8] = 0x66;
-	data[9] = 0x65;
+	for (int i = 0; i < datalen; i++)
+		data[i] = i + 0x60;
 
 	SetICMPV4Packet(picmp, ICMPV4TYPE::ICMPV4_ECHO_REQUEST,	0, rand()%0x10000, 0x0000, data, datalen);
 	free(data);
@@ -295,9 +288,9 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 	SetIPPacket(
 		pip,
 		IPV4HEADER_BASICLENGTH,
-		0xe92a,
+		0x3713,
 		0x0000,
-		255,
+		128,
 		IPV4TYPE::ICMP,
 		false,
 		(uint8_t *)&nicinfo->NICIPAddress,
@@ -306,7 +299,6 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 		datalen);
 
 	// 이더넷 헤더 셋팅
-	//SetETHHeader(packet, dstmac, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4));
 	SetETHHeaderWithARP(packet, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4), dstip);
 	// 패킷 전송
 	int ret = SendPacket(packet, packetlen);
@@ -323,7 +315,7 @@ void CWPcapSendSocket::SetICMPV4Packet(uint8_t *out, uint8_t type, uint8_t code,
 	icmph->identifier = iden;
 	icmph->seqnum = seq;
 	memcpy(out + ICMPV4HEADER_LENGTH, data, datalen);
-	icmph->checksum = ICMPV4HeaderChecksum(len, (uint16_t*)out);
+	icmph->checksum = ICMPV4HeaderChecksum(len, (uint8_t*)out);
 	icmph->checksum = htons(icmph->checksum);
 }
 

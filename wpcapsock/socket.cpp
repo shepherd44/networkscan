@@ -45,7 +45,7 @@ void CWPcapSocket::FindNetDevice()
 		GetAdaptersInfo(Info, &size);
 	}
 
-	// 
+	// NICInfoList 비우기(MAC주소 때문에 사용해야함)
 	m_NICInfoList.ClearList();
 	for (pcap_if_t *d = m_pAllNIC; d; d = d->next)
 	{
@@ -86,22 +86,24 @@ void CWPcapSocket::OpenNetDevice(int index)
 		throw WPcapSocketException("index is over NIC Number");
 	else
 	{
-		m_CurSel = index;
+		m_CurSel = index; 
 		NICInfo *p = m_NICInfoList.At(index);
-		m_pCapHandler = pcap_open_live(m_NICInfoList.At(index)->AdapterName, PROMISCUOUS_MODE, 1, 1000, m_ErrBuffer);
+		//m_pCapHandler = pcap_open_live(m_NICInfoList.At(index)->AdapterName, PACKET_SNAP_LEN, 1, -1, m_ErrBuffer);
+		m_pCapHandler = pcap_open(m_NICInfoList.At(index)->AdapterName, PACKET_SNAP_LEN, PCAP_OPENFLAG_PROMISCUOUS, 1, NULL, m_ErrBuffer);
 	}
 }
 void CWPcapSocket::OpenNetDevice(const char *nicname)
 {
 	if (m_pAllNIC == NULL)
-		FindNetDevice();
+		FindNetDevice(); 
 	int index = m_NICInfoList.IsInItem(nicname);
 	if (index == -1)
 		throw WPcapSocketException("Wrong NIC name");
 	else
 	{
 		m_CurSel = index;
-		m_pCapHandler = pcap_open_live(m_NICInfoList.At(index)->AdapterName, PROMISCUOUS_MODE, 1, 1000, m_ErrBuffer);
+		//m_pCapHandler = pcap_open_live(m_NICInfoList.At(index)->AdapterName, PACKET_SNAP_LEN, 1, 1000, m_ErrBuffer);
+		m_pCapHandler = pcap_open(m_NICInfoList.At(index)->AdapterName, PACKET_SNAP_LEN, PCAP_OPENFLAG_DATATX_UDP, 1, NULL, m_ErrBuffer);
 		if (m_pCapHandler == NULL)
 			throw WPcapSocketException("pcap open error");
 	}
@@ -115,6 +117,7 @@ void CWPcapSocket::CloseNetDevice()
 	if (m_pAllNIC != NULL)
 	{
 		pcap_freealldevs(m_pAllNIC);
+		m_NICInfoList.ClearList();
 		m_pAllNIC = NULL;
 	}
 	

@@ -151,7 +151,7 @@ typedef struct IPV4Header
 // IP Header Checksum 계산
 // @ iph_len: byte단위 헤더 길이
 // @ piph: 헤더 시작 위치
-uint16_t IPHeaderChecksum(uint16_t iph_len, uint16_t *piph);
+uint16_t IPHeaderChecksum(uint16_t iph_len, uint8_t *piph);
 
 
 // ICMP----------------------------------------
@@ -219,7 +219,7 @@ typedef struct TCPHeader
 
 // UDP------------------------
 
-#define UDPHEADER_LENGTH	2
+#define UDPHEADER_LENGTH	8
 
 typedef struct UDPHeader
 {

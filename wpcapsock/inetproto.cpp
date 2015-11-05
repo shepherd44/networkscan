@@ -2,21 +2,23 @@
 
 // Checksum
 // 헤더 길이는 바이트 단위
-uint16_t IPHeaderChecksum(uint16_t iph_len, uint16_t *piph)
+uint16_t IPHeaderChecksum(uint16_t iph_len, uint8_t *piph)
 {
-	uint32_t sum = 0;
+	uint16_t sum = 0;
 
 	// 2바이트 단위로 더하므로 iph_len/2
-	iph_len >>= 1;
-	for (uint16_t i = 0; i<iph_len; i = i + 1)
-		sum += ((piph[i] & 0xFF00) >> 8) + ((piph[i] & 0x00FF) << 8);
-	// 캐리 처리
-	while (sum >> 16)
-		sum = (sum & 0xFFFF) + (sum >> 16);
+	//iph_len >>= 1;
+	for (uint16_t i = 0; i < iph_len; i += 2)
+	{
+		uint16_t word = ((piph[i] << 8) + (piph[i + 1]));
+		uint16_t carry = 65535 - sum;
+		sum += word;
+		if (word > carry){ sum += 1; }
+	}
 	// 1의 보수
-	sum = ~sum & 0xFFFF;
+	sum = ~sum;
 
-	return ((uint16_t)sum);
+	return sum;
 }
 
 void SetARPPacket(uint8_t *out,

@@ -8,7 +8,9 @@
 #include <exception>
 #include <IcmpAPI.h>
 
+#define HAVE_REMOTE	1
 #include "pcap.h"
+
 #include "inetproto.h"
 #include "NICInfoList.h"
 
@@ -16,7 +18,7 @@
 #pragma comment(lib, "iphlpapi.lib")	// 맥 어드레스 얻기 위해 사용
 #pragma comment(lib, "ws2_32.lib")		// iphlpapi 사용
 
-#define PROMISCUOUS_MODE	65536
+#define PACKET_SNAP_LEN	65536
 #define NICNAME_OFFSET		12
 
 class CWPcapSocket

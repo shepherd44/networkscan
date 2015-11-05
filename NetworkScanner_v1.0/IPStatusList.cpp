@@ -12,8 +12,8 @@ CIPStatusList::CIPStatusList()
 
 CIPStatusList::~CIPStatusList()
 {
-	CloseHandle(m_ListMutex);
 	ClearList();
+	CloseHandle(m_ListMutex);
 }
 
 void CIPStatusList::AddItem(uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply)
