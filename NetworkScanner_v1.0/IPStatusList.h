@@ -7,10 +7,10 @@
 enum IPSTATUS
 {
 	NOTUSING = 0,		// 사용중이지 않음
-	USING = 1,			// 사용중
-	USING_GATEWAY = 2,	// 게이트웨이
-	IPDUPLICATION = 3,	// IP 중복 사용
-	//OTHERNETWORK = 5,	// 다른 네트워크 - (B Class 검색 지원 시 사용, 현재 C Class만 지원)
+	USING,			// 사용중
+	USING_GATEWAY,	// 게이트웨이
+	IPDUPLICATION,	// IP 중복 사용
+	ONLYPING,	// 다른 네트워크 - (B Class 검색 지원 시 사용, 현재 C Class만 지원)
 
 	IPSTATUSEND			// 열거형 끝
 };

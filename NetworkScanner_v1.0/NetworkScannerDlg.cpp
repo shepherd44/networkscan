@@ -340,7 +340,7 @@ void CNetworkScannerDlg::ListCtrlInit()
 {
 	LISTCTRL_COULMNSTRING__;	// static wchar_t *ListCtrlColumnString[] 선언
 	
-	ListView_SetExtendedListViewStyle(m_ListCtrlScanResult.m_hWnd, LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES | LVS_EX_GRIDLINES);
+	ListView_SetExtendedListViewStyle(m_ListCtrlScanResult.m_hWnd, LVS_EX_DOUBLEBUFFER| LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES | LVS_EX_GRIDLINES);
 	
 	// 열 설정
 	int i = 0, size = sizeof(LISTCTRL_COULMNSTRING_) / sizeof(wchar_t*);
@@ -370,92 +370,11 @@ afx_msg void CNetworkScannerDlg::OnListIPStatusCustomdraw(NMHDR* pNMHDR, LRESULT
 	}
 }
 
-void CNetworkScannerDlg::StatusBarCtrlInit()
-{
-	m_StatusBarCtrl.Create(WS_CHILD | WS_VISIBLE | SBT_OWNERDRAW, CRect(0, 0, 0, 0), this, 0);
-	CRect rect;
-	GetClientRect(&rect);
-	int strPartDim[2] = { rect.right / 2, -1 };
-	m_StatusBarCtrl.SetParts(1, strPartDim);
-	m_StatusBarCtrl.SetText(_T("Program Start. Scannig Available"), 0, 0);
-	m_StatusBarCtrl.SetIcon(2, SetIcon(AfxGetApp()->LoadIcon(IDR_MAINFRAME), FALSE));
-}
-void CNetworkScannerDlg::StatusBarCtrlUpdate()
-{
-	STATUSBARCTRL_STRING__;
-	StatusBarCtrlUpdate(STATUSBARCTRL_STRING(m_ProgramState));
-}
-void CNetworkScannerDlg::StatusBarCtrlUpdate(wchar_t* string)
-{
-	m_StatusBarCtrl.SetText(string, 0, 0);
-}
-
-void CNetworkScannerDlg::StartListUpdateThread()
-{
-	if (m_ListUpdateThread == NULL)
-	{
-		m_IsListUpdateThreadDye = false;
-		LPVOID param = &m_IsListUpdateThreadDye;
-		m_ListUpdateThread = AfxBeginThread(ListUpdateThreadFunc, param, 0, 0, 0);
-	}
-	else
-	{
-		throw std::exception("list update thread 생성 실패");
-	}
-}
-void CNetworkScannerDlg::EndListUpdateThread()
-{
-	if (m_ListUpdateThread != NULL)
-	{
-		m_IsListUpdateThreadDye = true;
-		WaitForSingleObject(m_ListUpdateThread, INFINITE);
-		Sleep(1000);
-		m_ListUpdateThread = NULL;
-	}
-}
-UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
-{
-	bool *isdye = (bool *)lpParam;
-	CNetworkScannerDlg *maindlg = (CNetworkScannerDlg*)AfxGetApp()->GetMainWnd();
-	CIPStatusList *iplist = &maindlg->m_ViewListBuffer;
-	while (1)
-	{
-		//maindlg->m_EventListUpdate->Lock();
-		if (*isdye)
-			break;
-
-		maindlg->StatusBarCtrlUpdate();
-
-		int size = iplist->GetSize();
-		maindlg->m_ListCtrlScanResult.SetItemCount(size);
-		
-		// 종료 메시지 확인
-		for (int i = 0; i < 10; i++)
-		{
-			Sleep(100);
-			if (*isdye)
-				break;
-		}
-	}
-	return 0;
-}
-
-void CNetworkScannerDlg::OnClose()
-{
-	m_ProgramState = SCANNIG_STATE::PROGRAM_END;
-	// 쓰레드 중지
-	m_NetworkIPScan.EndSend();
-	m_NetworkIPScan.EndCapture();
-	EndListUpdateThread();
-
-	CDialogEx::OnClose();
-}
-
 // 리스트 컨트롤 버츄얼 리스트 적용
 void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	NMLVDISPINFO *pDispInfo = reinterpret_cast<NMLVDISPINFO*>(pNMHDR);
-	
+
 	// 출력용 스트링 변수 배열
 	static wchar_t *ipstatstr[] =
 	{
@@ -463,6 +382,7 @@ void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *
 		TEXT("USING"),
 		TEXT("GATEWAY"),
 		TEXT("IP DUPLICATION"),
+		TEXT("PING REPLY ONLY")
 	};
 
 	CString str;
@@ -507,6 +427,93 @@ void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *
 
 	}
 	*pResult = 0;
+}
+
+void CNetworkScannerDlg::StatusBarCtrlInit()
+{
+	m_StatusBarCtrl.Create(WS_CHILD | WS_VISIBLE | SBT_OWNERDRAW, CRect(0, 0, 0, 0), this, 0);
+	CRect rect;
+	GetClientRect(&rect);
+	int strPartDim[2] = { rect.right / 2, -1 };
+	m_StatusBarCtrl.SetParts(1, strPartDim);
+	m_StatusBarCtrl.SetText(_T("Program Start. Scannig Available"), 0, 0);
+	m_StatusBarCtrl.SetIcon(2, SetIcon(AfxGetApp()->LoadIcon(IDR_MAINFRAME), FALSE));
+}
+void CNetworkScannerDlg::StatusBarCtrlUpdate()
+{
+	STATUSBARCTRL_STRING__;
+	StatusBarCtrlUpdate(STATUSBARCTRL_STRING(m_ProgramState));
+}
+void CNetworkScannerDlg::StatusBarCtrlUpdate(wchar_t* string)
+{
+	m_StatusBarCtrl.SetText(string, 0, 0);
+}
+
+void CNetworkScannerDlg::StartListUpdateThread()
+{
+	if (m_ListUpdateThread == NULL)
+	{
+		m_IsListUpdateThreadDye = false;
+		m_ListUpdateThread = AfxBeginThread(ListUpdateThreadFunc, this, 0, 0, 0);
+	}
+	else
+	{
+		throw std::exception("list update thread 생성 실패");
+	}
+}
+void CNetworkScannerDlg::EndListUpdateThread()
+{
+	if (m_ListUpdateThread != NULL)
+	{
+		m_IsListUpdateThreadDye = true;
+		WaitForSingleObject(m_ListUpdateThread, INFINITE);
+		Sleep(100);
+		m_ListUpdateThread = NULL;
+	}
+}
+UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
+{
+	CNetworkScannerDlg *maindlg = (CNetworkScannerDlg*)lpParam;
+	CIPStatusList *iplist = &maindlg->m_ViewListBuffer;
+	while (1)
+	{
+		if (maindlg->m_IsListUpdateThreadDye)
+			break;
+
+		maindlg->StatusBarCtrlUpdate();
+		maindlg->ViewUpdate();
+		int size = iplist->GetSize();
+		for (int i = 0; i < size; i++)
+		{
+			maindlg->m_ListCtrlScanResult.RedrawItems(i,i);
+		}
+		
+		
+		// 종료 메시지 확인
+		for (int i = 0; i < 10; i++)
+		{
+			Sleep(100);
+			if (maindlg->m_IsListUpdateThreadDye)
+				break;
+		}
+	}
+	return 0;
+}
+
+void CNetworkScannerDlg::UpdateListCtrl(int index)
+{
+
+}
+
+void CNetworkScannerDlg::OnClose()
+{
+	m_ProgramState = SCANNIG_STATE::PROGRAM_END;
+	// 쓰레드 중지
+	m_NetworkIPScan.EndSend();
+	m_NetworkIPScan.EndCapture();
+	EndListUpdateThread();
+
+	CDialogEx::OnClose();
 }
 
 void CNetworkScannerDlg::ViewUpdate()

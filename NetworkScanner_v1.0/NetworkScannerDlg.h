@@ -39,7 +39,7 @@
 														RGB(250, 250, 210),	\
 														RGB(0, 200, 0),		\
 														RGB(200, 0, 0),		\
-														RGB(0, 0, 255)		\
+														RGB(0, 200, 200),		\
 													}
 #define IPSTATUS_CELLCOLOR(index)	ipstatcolor[index]
 
@@ -64,7 +64,7 @@ enum SCANNIG_STATE
 	SCANNIG,			// 스캔 시작 시
 	SCANNING_ARPSEND,	// ARP 패킷 전송 
 	SCANNING_PINGSEND,	// ICMP 패킷 전송
-	SCANNING_COMPLETE,	// 
+	SCANNING_SENDINGCOMPLETE,	// 
 	STOP_ALL,			// 패킷 전송, 캡처 모두 중지
 	STOP_SEND,			// IP 상태 확인용 패킷 전송 중지
 	STOP_RECV,			// 패킷 캡처 및 분석 중지
@@ -158,8 +158,9 @@ public:
 	void StatusBarCtrlUpdate(wchar_t* string);
 
 	// 체크박스 컨트롤 변수 및 함수
-	CButton m_CheckBoxCtrlIsHideDeadIP;		// HideDeadIP
-	
+	CButton m_CheckBoxCtrlIsHideDeadIP;
+	afx_msg void OnBnClickedCheckHidedeadip();
+
 	// 스캐너 클래스
 	CNetworkIPScan m_NetworkIPScan;
 
@@ -174,5 +175,5 @@ public:
 	int GetProgeamState() { return m_ProgramState; }
 	
 	void ViewUpdate();
-	afx_msg void OnBnClickedCheckHidedeadip();
+	void UpdateListCtrl(int index);
 };

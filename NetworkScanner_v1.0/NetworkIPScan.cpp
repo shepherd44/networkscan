@@ -81,6 +81,7 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 			sendsock->SendARPRequest(ip);
 	}
 
+	// ARP 보낸 뒤 대기
 	Sleep(500);
 	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_PINGSEND);
 
@@ -103,7 +104,7 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 	}
 
 	Sleep(500);
-	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_COMPLETE);
+	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_SENDINGCOMPLETE);
 
 	return 0;
 }
@@ -241,9 +242,9 @@ void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 			{
 				IPSTATUS status = ipstatlist->At(index)->IPStatus;
 
-				// NOTUSING 상태일 경우 USING으로 바꾸고
+				// NOTUSING 상태일 경우 ONLYPING으로 바꾸고
 				if (status == IPSTATUS::NOTUSING)
-					ipstatlist->UpdateItemPingStat(index, IPSTATUS::USING, TRUE);
+					ipstatlist->UpdateItemPingStat(index, IPSTATUS::ONLYPING, TRUE);
 				// 아닐경우 status를 그대로 가져간다.
 				else
 					ipstatlist->UpdateItemPingStat(index, status, TRUE);
@@ -303,7 +304,6 @@ void CNetworkIPScan::EndCapture()
 
 void CNetworkIPScan::IPStatusListInsertItem(uint32_t hbeginip, uint32_t hendip)
 {
-	CNetworkScannerDlg *maindlg = (CNetworkScannerDlg *)AfxGetApp()->GetMainWnd();
 	IPStatusInfo *item;
 	int size = m_IPStatInfoList.GetSize();
 	int index;
