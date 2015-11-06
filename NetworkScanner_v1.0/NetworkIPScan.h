@@ -34,6 +34,9 @@ private:
 	CWinThread *m_hSendThread;
 	bool m_IsSendThreadDye;
 
+	// 전송 주기
+	int m_SendInterval;
+
 private:
 	// 초기화 함수
 	void InitializeAll();		// 전체 초기화
@@ -77,6 +80,11 @@ public:
 	void IPStatusListInsertItem(uint32_t hbeginip, uint32_t hendip);
 	void IPStatusListDeleteItem(int index);
 	
+	int GetSendInterval() { return m_SendInterval; }
+	void SetSendInterval(int ms) { m_SendInterval = ms; }
+	CWPcapSendSocket *GetSendSocket() { return &m_SendSock; }
+	CWPcapCaptureSocket *GetCaptureSocket() { return &m_CaptureSock; }
+
 public:
 	CNetworkIPScan();
 	~CNetworkIPScan();

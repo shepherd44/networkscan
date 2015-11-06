@@ -12,6 +12,7 @@ CNetworkIPScan::~CNetworkIPScan()
 // 초기화 함수
 void CNetworkIPScan::InitializeAll()
 {
+	m_SendInterval = 1000;
 	m_SendSock.FindNetDevice();
 	m_hCaptureThread = NULL;
 	m_hSendThread = NULL;
@@ -51,59 +52,71 @@ void CNetworkIPScan::Scan(int nicindex)
 UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 {
 	// 파라미터 가져오기
+	CNetworkIPScan *scanner = (CNetworkIPScan *)lpParam;
 	CNetworkScannerDlg *maindlg = (CNetworkScannerDlg *)(AfxGetApp()->GetMainWnd());
-	CWPcapSendSocket *sendsock = (CWPcapSendSocket *)((struct ThreadParams*)lpParam)->socket;
-	bool *isdye = (bool *)((struct ThreadParams*)lpParam)->isend;
-	CIPStatusList *iplist = (CIPStatusList *)((struct ThreadParams*)lpParam)->list;
-	// 스레드 종료 확인
-	if (*isdye)
-		return 0;
-
-	// 프로그램 상태바 업데이트
-	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_ARPSEND);
-
+	CWPcapSendSocket *sendsock = scanner->GetSendSocket();
+	bool *isdye = (bool *)&scanner->m_IsSendThreadDye;
+	CIPStatusList *iplist = (CIPStatusList *)scanner->GetIpStatusList();
+	
 	// 네트워크 주소 계산
 	NICInfo *nicinfo = const_cast<NICInfo *>(sendsock->GetCurrentSelectNICInfo());
 	uint32_t hnetmask = ntohl(nicinfo->Netmask);
 	uint32_t hstartnetwork = hnetmask & ntohl(nicinfo->NICIPAddress);
 	uint32_t hendnetwork = hstartnetwork + ~hnetmask;
 	uint32_t ip, hip;
-	int size = iplist->GetSize();
-	int i = 0;
-	for (; i < size; i++)
+	
+	while (1)
 	{
-		// 스레드 종료 확인
-		if (*isdye)
-			return 0;
-		ip = iplist->At(i)->IPAddress;
-		hip = ntohl(ip);
-		if ( hip >= hstartnetwork && hip <= hendnetwork )
-			sendsock->SendARPRequest(ip);
-	}
-
-	// ARP 보낸 뒤 대기
-	Sleep(500);
-	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_PINGSEND);
-
-	for (i = 0; i < size; i++)
-	{
-		// 스레드 종료 확인
-		if (*isdye)
-			return 0;
-		ip = iplist->At(i)->IPAddress;
-		hip = ntohl(ip);
-		/*if (hip >= hstartnetwork && hip <= hendnetwork)
+		// 프로그램 상태바 업데이트
+		maindlg->SetProgramState(SCANNIG_STATE::SCANNING_ARPSEND);
+		int size = iplist->GetSize();
+		int i = 0;
+		for (; i < size; i++)
 		{
-			if (strncmp((char*)iplist->At(i)->MACAddress, "\x000000", MACADDRESS_LENGTH) == 0)
-				continue;
-			else
-				sendsock->SendICMPV4ECHORequest(ip);
+			// 스레드 종료 확인
+			if (*isdye)
+				return 0;
+			ip = iplist->At(i)->IPAddress;
+			hip = ntohl(ip);
+			if (hip >= hstartnetwork && hip <= hendnetwork)
+				sendsock->SendARPRequest(ip);
 		}
-		else*/
+
+		// ARP 보낸 뒤 대기
+		for (i = 0; i < scanner->GetSendInterval() / 10; i++)
+		{
+			if (*isdye)
+				return 0;
+			Sleep(10);
+		}
+		maindlg->SetProgramState(SCANNIG_STATE::SCANNING_PINGSEND);
+
+		for (i = 0; i < size; i++)
+		{
+			// 스레드 종료 확인
+			if (*isdye)
+				return 0;
+			ip = iplist->At(i)->IPAddress;
+			hip = ntohl(ip);
+			/*if (hip >= hstartnetwork && hip <= hendnetwork)
+			{
+			if (strncmp((char*)iplist->At(i)->MACAddress, "\x000000", MACADDRESS_LENGTH) == 0)
+			continue;
+			else
 			sendsock->SendICMPV4ECHORequest(ip);
+			}
+			else*/
+			sendsock->SendICMPV4ECHORequest(ip);
+		}
+
+		for (i = 0; i < scanner->GetSendInterval() / 10; i++)
+		{
+			if (*isdye)
+				return 0;
+			Sleep(10);
+		}
 	}
 
-	Sleep(500);
 	maindlg->SetProgramState(SCANNIG_STATE::SCANNING_SENDINGCOMPLETE);
 
 	return 0;
@@ -118,7 +131,7 @@ void CNetworkIPScan::StartSend()
 		sendparam.isend = &m_IsSendThreadDye;
 		sendparam.list = &m_IPStatInfoList;
 		m_IsSendThreadDye = FALSE;
-		m_hSendThread = AfxBeginThread(SendThreadFunc, &sendparam, 0, 0, 0);
+		m_hSendThread = AfxBeginThread(SendThreadFunc, this, 0, 0, 0);
 	}
 	else
 	{
