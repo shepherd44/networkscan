@@ -344,7 +344,7 @@ void CNetworkScannerDlg::ListCtrlInit()
 	
 	// ¿­ ¼³Á¤
 	int i = 0, size = sizeof(LISTCTRL_COULMNSTRING_) / sizeof(wchar_t*);
-	m_ListCtrlScanResult.InsertColumn(i, LISTCTRL_COULMNSTRING(i++), LVCFMT_LEFT, LIST_COLUMN_NUMBER_LENGTH, -1);
+	m_ListCtrlScanResult.InsertColumn(i, LISTCTRL_COULMNSTRING(i++), LVCFMT_LEFT, 0, -1);
 	m_ListCtrlScanResult.InsertColumn(i, LISTCTRL_COULMNSTRING(i++), LVCFMT_LEFT, LIST_COLUMN_NUMBER_LENGTH, -1);
 	for (; i < size; i++)
 		m_ListCtrlScanResult.InsertColumn(i, ListCtrlColumnString[i], LVCFMT_LEFT, LIST_COLUMN_LENGTH, -1);
