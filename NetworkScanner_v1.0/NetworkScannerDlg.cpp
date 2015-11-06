@@ -192,6 +192,7 @@ void CNetworkScannerDlg::OnBnClickedBtnScan()
 
 	// ½ºÄµ ½ÃÀÛ
 	m_NetworkIPScan.Scan(nicindex);
+	
 }
 void CNetworkScannerDlg::OnBnClickedBtnStopAll()
 {

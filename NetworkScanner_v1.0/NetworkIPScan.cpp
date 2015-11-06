@@ -21,6 +21,9 @@ void CNetworkIPScan::InitializeAll()
 // 스캔 시작
 void CNetworkIPScan::Scan(int nicindex)
 {
+	// 결과 리스트 초기화
+
+	
 	// socket open
 	m_SendSock.OpenNetDevice(nicindex);
 	m_CaptureSock.OpenNetDevice(m_SendSock.GetCurrentSelectNICName());
@@ -207,6 +210,7 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 			switch (item->IPStatus)
 			{
 			case IPSTATUS::NOTUSING:
+			case IPSTATUS::ONLYPING:
 				ipstatlist->UpdateItemARPInfo(index, mac, USING);
 				break;
 			case IPSTATUS::USING:
