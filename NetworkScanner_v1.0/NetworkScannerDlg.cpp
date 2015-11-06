@@ -75,6 +75,7 @@ BEGIN_MESSAGE_MAP(CNetworkScannerDlg, CDialogEx)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_LIST_SCANRESULT, &CNetworkScannerDlg::OnListIPStatusCustomdraw)
 	ON_WM_CLOSE()
 	ON_NOTIFY(LVN_GETDISPINFO, IDC_LIST_SCANRESULT, &CNetworkScannerDlg::OnLvnGetdispinfoListScanresult)
+	ON_BN_CLICKED(IDC_CHECK_HIDEDEADIP, &CNetworkScannerDlg::OnBnClickedCheckHidedeadip)
 END_MESSAGE_MAP()
 
 
@@ -249,22 +250,22 @@ void CNetworkScannerDlg::OnBnClickedBtnScanAddip()
 }
 void CNetworkScannerDlg::OnBnClickedBtnScanRemoveip()
 {
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	int count = m_ListCtrlScanResult.GetItemCount();
-	
-	for (int i = count - 1; i >= 0; i--)
+	POSITION pos = m_ListCtrlScanResult.GetFirstSelectedItemPosition();
+	int selected;
+	IPStatusInfo *ipstat;
+	while (pos)
 	{
-		BOOL ischeck = m_ListCtrlScanResult.GetCheck(i);
-		if (ischeck == TRUE)
+		selected = m_ListCtrlScanResult.GetNextSelectedItem(pos);
+		int index = m_NetworkIPScan.GetIpStatusList()->IsInItem(m_ViewListBuffer.At(selected)->IPAddress);
+		if (index == -1)
+			continue;
+		else
 		{
-			m_NetworkIPScan.IPStatusListDeleteItem(i);
+			m_NetworkIPScan.GetIpStatusList()->RemoveItem(index);
+			m_ListCtrlScanResult.RedrawItems(selected - 1, selected + 1);
 		}
 	}
-
-	CIPStatusList *iplist = m_NetworkIPScan.GetIpStatusList();
-	
-	int size = iplist->GetSize();
-	m_ListCtrlScanResult.SetItemCount(size);
+	ViewUpdate();
 }
 
 
@@ -363,7 +364,7 @@ afx_msg void CNetworkScannerDlg::OnListIPStatusCustomdraw(NMHDR* pNMHDR, LRESULT
 		int nItem = static_cast<int>(pLVCD->nmcd.dwItemSpec);
 		
 		// 색 지정
-		IPStatusInfo *item = m_NetworkIPScan.GetIpStatusList()->At(nItem);
+		IPStatusInfo *item = m_ViewListBuffer.At(nItem);
 		pLVCD->clrTextBk = IPSTATUS_CELLCOLOR(item->IPStatus);
 		*pResult = CDRF_DODEFAULT;
 	}
@@ -416,7 +417,7 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 {
 	bool *isdye = (bool *)lpParam;
 	CNetworkScannerDlg *maindlg = (CNetworkScannerDlg*)AfxGetApp()->GetMainWnd();
-	CIPStatusList *iplist = (maindlg->m_NetworkIPScan.GetIpStatusList());
+	CIPStatusList *iplist = &maindlg->m_ViewListBuffer;
 	while (1)
 	{
 		//maindlg->m_EventListUpdate->Lock();
@@ -468,9 +469,8 @@ void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *
 	IPStatusInfo *ipstat;
 	LV_ITEM* pItem = &(pDispInfo)->item;
 
-	int itemid = pItem->iItem;
 	int index = pItem->iItem;
-	ipstat = m_NetworkIPScan.GetIpStatusList()->At(index);
+	ipstat = m_ViewListBuffer.At(index);
 	if (pItem->mask & LVIF_TEXT)
 	{
 		switch (pItem->iSubItem)
@@ -533,4 +533,11 @@ void CNetworkScannerDlg::ViewUpdate()
 			m_ViewListBuffer.AddItem(ipstat->IPAddress, ipstat->MACAddress, ipstat->IPStatus, ipstat->PingReply);
 		}
 	}
+}
+
+// Hide DeadIP 체크박스 클릭할 경우
+void CNetworkScannerDlg::OnBnClickedCheckHidedeadip()
+{
+	ViewUpdate();
+	m_ListCtrlScanResult.SetItemCount(m_ViewListBuffer.GetSize());
 }

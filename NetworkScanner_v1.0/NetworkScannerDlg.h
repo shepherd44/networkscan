@@ -174,4 +174,5 @@ public:
 	int GetProgeamState() { return m_ProgramState; }
 	
 	void ViewUpdate();
+	afx_msg void OnBnClickedCheckHidedeadip();
 };
