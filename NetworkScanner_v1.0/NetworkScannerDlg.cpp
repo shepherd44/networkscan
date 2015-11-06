@@ -416,7 +416,8 @@ void CNetworkScannerDlg::EndListUpdateThread()
 	if (m_ListUpdateThread != NULL)
 	{
 		m_IsListUpdateThreadDye = true;
-
+		WaitForSingleObject(m_ListUpdateThread, INFINITE);
+		Sleep(1000);
 		m_ListUpdateThread = NULL;
 	}
 }
@@ -428,7 +429,9 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 	while (1)
 	{
 		//maindlg->m_EventListUpdate->Lock();
-		
+		if (*isdye)
+			break;
+
 		maindlg->StatusBarCtrlUpdate();
 
 		int size = iplist->GetSize();
@@ -437,7 +440,7 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 		// 종료 메시지 확인
 		for (int i = 0; i < 10; i++)
 		{
-			Sleep(1000);
+			Sleep(100);
 			if (*isdye)
 				break;
 		}
