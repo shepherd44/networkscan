@@ -29,10 +29,12 @@ public:
 protected:
 #endif // _DEBUG
 	
-	pcap_if_t *m_pAllNIC;	// 네트워크 디바이스 리스트
-	pcap_t *m_pCapHandler;	// winpcap 디바이스 연결 소켓
+	// 네트워크 디바이스 리스트
+	pcap_if_t *m_pAllNIC;
+	// winpcap 디바이스 연결 소켓
+	pcap_t *m_pCapHandler;	
 	int m_CurSel;
-	// netmask, macaddress, ip
+	// NIC 정보 리스트 헤드
 	CNICInfoList m_NICInfoList;
 
 	// winpcap 에러 버퍼
@@ -49,16 +51,21 @@ protected:
 public:
 	// pcap_t 네트워크 인터페이스 연결
 	void OpenNetDevice(int index = 0);
+	// 디바이스 이름으로 열기
 	void OpenNetDevice(const char *nicname);
+	// 연결 종료
 	void CloseNetDevice();
 
 	// NIC 갯수 반환
 	int GetNicNumber();
+	// 현재 선택된 NIC 번호 가져오기
 	int GetCurrentSelectNICNum();
+	// 현재 선택된 NIC 정보 구조체 가져오기
 	const NICInfo *GetCurrentSelectNICInfo();
+	// 현재 선택된 NIC 이름 가져오기
 	char *GetCurrentSelectNICName();
+	// 에러 버퍼 가져오기
 	const char* GetErrorBuffer();
-	void GetNICInfo();
 
 public:
 	CWPcapSocket();

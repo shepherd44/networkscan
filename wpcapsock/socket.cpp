@@ -27,11 +27,8 @@ void CWPcapSocket::SockInit()
 void CWPcapSocket::FindNetDevice()
 {
 	if (pcap_findalldevs(&m_pAllNIC, m_ErrBuffer) == -1)
-	{
 		throw WPcapSocketException("DeviceFindError\n");
-	}
 	
-	// NICInfo 채우기 추가
 	// 네트워크 디바이스 정보 얻기
 	DWORD size = sizeof(PIP_ADAPTER_INFO);
 	PIP_ADAPTER_INFO Info;
@@ -39,20 +36,16 @@ void CWPcapSocket::FindNetDevice()
 
 	// 네트워크 인터페이스 정보 가져오기
 	int result = GetAdaptersInfo(Info, &size);
-	if (result == ERROR_BUFFER_OVERFLOW)
-	{
+	if (result == ERROR_BUFFER_OVERFLOW) {
 		Info = (PIP_ADAPTER_INFO)malloc(size);
 		GetAdaptersInfo(Info, &size);
 	}
 
-	// NICInfoList 비우기(MAC주소 때문에 사용해야함)
+	// NICInfoList 채우기
 	m_NICInfoList.ClearList();
-	for (pcap_if_t *d = m_pAllNIC; d; d = d->next)
-	{
-		for (PIP_ADAPTER_INFO pai = Info; pai; pai = pai->Next)
-		{
-			if (strcmp((d->name + NICNAME_OFFSET), pai->AdapterName) == 0)
-			{
+	for (pcap_if_t *d = m_pAllNIC; d; d = d->next)	{
+		for (PIP_ADAPTER_INFO pai = Info; pai; pai = pai->Next)	{
+			if (strcmp((d->name + NICNAME_OFFSET), pai->AdapterName) == 0)	{
 				uint8_t mac[6];
 				memset(mac, 0, MACADDRESS_LENGTH);
 				memcpy(mac, pai->Address, MACADDRESS_LENGTH);
@@ -62,19 +55,14 @@ void CWPcapSocket::FindNetDevice()
 									  inet_addr(pai->GatewayList.IpAddress.String),
 									  inet_addr(pai->IpAddressList.IpAddress.String), 
 									  mac);
-				
 			}
 			else
 				continue;
 		}
 	}
-
 	free(Info);
-
 	if (m_NICInfoList.GetSize() == 0)
 		throw WPcapSocketException("No Network Interface Found\n");
-
-	// 선택된 디바이스 찾기
 }
 
 // 네트워크 인터페이스 연결(0부터 시작)
@@ -88,8 +76,7 @@ void CWPcapSocket::OpenNetDevice(int index)
 	{
 		m_CurSel = index; 
 		NICInfo *p = m_NICInfoList.At(index);
-		//m_pCapHandler = pcap_open_live(m_NICInfoList.At(index)->AdapterName, PACKET_SNAP_LEN, 1, -1, m_ErrBuffer);
-		m_pCapHandler = pcap_open(m_NICInfoList.At(index)->AdapterName, PACKET_SNAP_LEN, PCAP_OPENFLAG_PROMISCUOUS, 1, NULL, m_ErrBuffer);
+		m_pCapHandler = pcap_open_live(m_NICInfoList.At(index)->AdapterName, PACKET_SNAP_LEN, 1, -1, m_ErrBuffer);
 	}
 }
 void CWPcapSocket::OpenNetDevice(const char *nicname)
@@ -102,8 +89,7 @@ void CWPcapSocket::OpenNetDevice(const char *nicname)
 	else
 	{
 		m_CurSel = index;
-		//m_pCapHandler = pcap_open_live(m_NICInfoList.At(index)->AdapterName, PACKET_SNAP_LEN, 1, 1000, m_ErrBuffer);
-		m_pCapHandler = pcap_open(m_NICInfoList.At(index)->AdapterName, PACKET_SNAP_LEN, PCAP_OPENFLAG_DATATX_UDP, 1, NULL, m_ErrBuffer);
+		m_pCapHandler = pcap_open_live(m_NICInfoList.At(index)->AdapterName, PACKET_SNAP_LEN, 1, 1000, m_ErrBuffer);
 		if (m_pCapHandler == NULL)
 			throw WPcapSocketException("pcap open error");
 	}

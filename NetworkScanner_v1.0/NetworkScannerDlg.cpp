@@ -537,6 +537,8 @@ void CNetworkScannerDlg::ViewUpdate()
 	{
 		for (int i = 0; i < size; i++)
 		{
+			if (i == 292)
+				Sleep(0);
 			ipstat = captureitemlist->At(i);
 			m_ViewListBuffer.AddItem(ipstat->IPAddress, ipstat->MACAddress, ipstat->IPStatus, ipstat->PingReply);
 		}
