@@ -21,9 +21,6 @@ void CNetworkIPScan::InitializeAll()
 // 스캔 시작
 void CNetworkIPScan::Scan(int nicindex)
 {
-	// 결과 리스트 초기화
-
-	
 	// socket open
 	m_SendSock.OpenNetDevice(nicindex);
 	m_CaptureSock.OpenNetDevice(m_SendSock.GetCurrentSelectNICName());
@@ -101,14 +98,6 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 				return 0;
 			ip = iplist->At(i)->IPAddress;
 			hip = ntohl(ip);
-			/*if (hip >= hstartnetwork && hip <= hendnetwork)
-			{
-			if (strncmp((char*)iplist->At(i)->MACAddress, "\x000000", MACADDRESS_LENGTH) == 0)
-			continue;
-			else
-			sendsock->SendICMPV4ECHORequest(ip);
-			}
-			else*/
 			sendsock->SendICMPV4ECHORequest(ip);
 		}
 

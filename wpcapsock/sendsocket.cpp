@@ -96,7 +96,7 @@ void CWPcapSendSocket::SetARPRequest(uint8_t *out, uint8_t *srcmac, uint8_t *src
 
 	// arppacket 만들기
 	arppacket.htype = htons(ARPHRD::ETHERNET);			// 하드웨어 타입
-	arppacket.ptype = htons(ETHTYPE::IPV4);		// 프로토콜 타입
+	arppacket.ptype = htons(ETHTYPE::IPV4);				// 프로토콜 타입
 	arppacket.hlen = MACADDRESS_LENGTH;					// 하드웨어 주소 길이
 	arppacket.plen = IPV4ADDRESS_LENGTH;					// 프로토콜 주소 길이
 	arppacket.opcode = op;	// ARP OPCODE
@@ -278,11 +278,9 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 	uint16_t datalen = icmpv4len - ICMPV4HEADER_LENGTH;
 	uint8_t *data = (uint8_t *)malloc(datalen);
 	uint16_t i = 0;
-	
 	memset(data, 0, datalen);
 	for (int i = 0; i < datalen; i++)
 		data[i] = i + 0x60;
-
 	SetICMPV4Packet(picmp, ICMPV4TYPE::ICMPV4_ECHO_REQUEST,	0, rand()%0x10000, 0x0000, data, datalen);
 	free(data);
 
@@ -304,6 +302,7 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 
 	// 이더넷 헤더 셋팅
 	SetETHHeaderWithARP(packet, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4), dstip);
+
 	// 패킷 전송
 	int ret = SendPacket(packet, packetlen);
 	free(packet);
