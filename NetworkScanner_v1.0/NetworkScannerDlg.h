@@ -100,6 +100,7 @@ protected:
 protected:
 	void InitializeAll();
 
+	CIPStatusList m_ViewListBuffer;
 	// 리스트 컨트롤 업데이트 쓰레드
 	CWinThread *m_ListUpdateThread;
 	// 리스트 컨트롤 중지용 변수
@@ -172,5 +173,5 @@ public:
 	void SetProgramState(SCANNIG_STATE state) { m_ProgramState = state; }
 	int GetProgeamState() { return m_ProgramState; }
 	
-	
+	void ViewUpdate();
 };

@@ -243,6 +243,8 @@ void CNetworkScannerDlg::OnBnClickedBtnScanAddip()
 	m_NetworkIPScan.IPStatusListInsertItem(hbeginip, hendip);
 
 	int size = iplist->GetSize();
+
+	ViewUpdate();
 	m_ListCtrlScanResult.SetItemCount(size);
 }
 void CNetworkScannerDlg::OnBnClickedBtnScanRemoveip()
@@ -320,18 +322,7 @@ void CNetworkScannerDlg::IPAddrCtrlInit()
 
 	u_char *casttemp1 = reinterpret_cast<u_char*>(&beginip);
 	u_char *casttemp2 = reinterpret_cast<u_char*>(&endip);
-	// Begin IP input 범위 제한
-	//m_IPAddrCtrlBeginIP.SetFieldRange(0, static_cast<char>(casttemp1[0]), static_cast<char>(casttemp2[0]));
-	//m_IPAddrCtrlBeginIP.SetFieldRange(1, static_cast<char>(casttemp1[1]), static_cast<char>(casttemp2[1]));
-	//m_IPAddrCtrlBeginIP.SetFieldRange(2, static_cast<char>(casttemp1[2]), static_cast<char>(casttemp2[2]));
-	//m_IPAddrCtrlBeginIP.SetFieldRange(3, static_cast<char>(casttemp1[3]), static_cast<char>(casttemp2[3]));
-
-	// End IP input 범위 제한
-	//m_IPAddrCtrlEndIP.SetFieldRange(0, static_cast<char>(casttemp1[0]), static_cast<char>(casttemp2[0]));
-	//m_IPAddrCtrlEndIP.SetFieldRange(1, static_cast<char>(casttemp1[1]), static_cast<char>(casttemp2[1]));
-	//m_IPAddrCtrlEndIP.SetFieldRange(2, static_cast<char>(casttemp1[2]), static_cast<char>(casttemp2[2]));
-	//m_IPAddrCtrlEndIP.SetFieldRange(3, static_cast<char>(casttemp1[3]), static_cast<char>(casttemp2[3]));
-
+	
 	// 첫 주소 셋팅
 	m_IPAddrCtrlBeginIP.SetAddress(static_cast<char>(casttemp1[0]),
 		static_cast<char>(casttemp1[1]),
@@ -459,7 +450,7 @@ void CNetworkScannerDlg::OnClose()
 	CDialogEx::OnClose();
 }
 
-
+// 리스트 컨트롤 버츄얼 리스트 적용
 void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	NMLVDISPINFO *pDispInfo = reinterpret_cast<NMLVDISPINFO*>(pNMHDR);
@@ -516,4 +507,30 @@ void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *
 
 	}
 	*pResult = 0;
+}
+
+void CNetworkScannerDlg::ViewUpdate()
+{
+	CIPStatusList *captureitemlist = m_NetworkIPScan.GetIpStatusList();
+	IPStatusInfo *ipstat;
+	int size = captureitemlist->GetSize();
+	
+	m_ViewListBuffer.ClearList();
+	if (IsDlgButtonChecked(IDC_CHECK_HIDEDEADIP))
+	{
+		for (int i = 0; i < size; i++)
+		{
+			ipstat = captureitemlist->At(i);
+			if (ipstat->IPStatus != IPSTATUS::NOTUSING)
+				m_ViewListBuffer.AddItem(ipstat->IPAddress, ipstat->MACAddress, ipstat->IPStatus, ipstat->PingReply);
+		}
+	}
+	else
+	{
+		for (int i = 0; i < size; i++)
+		{
+			ipstat = captureitemlist->At(i);
+			m_ViewListBuffer.AddItem(ipstat->IPAddress, ipstat->MACAddress, ipstat->IPStatus, ipstat->PingReply);
+		}
+	}
 }
