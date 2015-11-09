@@ -247,29 +247,6 @@ int CWPcapSendSocket::GetARPTable(PMIB_IPNETTABLE *pmib)
 	return 0;
 }
 
-void CWPcapSendSocket::SendPingInWin(uint32_t dstip)
-{
-	HANDLE hIcmpFile;
-	DWORD dwRetVal = 0;
-	char SendData[32] = "Data Buffer";
-	LPVOID ReplyBuffer = NULL;
-	DWORD ReplySize = 0;
-
-	hIcmpFile = IcmpCreateFile();
-	if (hIcmpFile == INVALID_HANDLE_VALUE)
-	return ;
-
-	ReplySize = sizeof(ICMP_ECHO_REPLY) + sizeof(SendData);
-	ReplyBuffer = (VOID*)malloc(ReplySize);
-	if (ReplyBuffer == NULL)
-	return ;
-
-	dwRetVal = IcmpSendEcho(hIcmpFile, dstip, SendData, sizeof(SendData),
-	NULL, ReplyBuffer, ReplySize, -1);
-	
-	//CloseHandle(hIcmpFile);
-	free(ReplyBuffer);
-}
 int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 {
 	NICInfo *nicinfo = m_NICInfoList.At(m_CurSel);
@@ -342,4 +319,114 @@ bool CWPcapSendSocket::IsInNet(uint32_t ip)
 		return true;
 	else
 		return false;
+}
+
+int CWPcapSendSocket::SendUDP()
+{
+	NICInfo *nicinfo = m_NICInfoList.At(m_CurSel);
+	uint16_t packetlen = UDPHEADER_LENGTH + IPV4HEADER_BASICLENGTH + ETHERNETHEADER_LENGTH;
+	uint16_t udplen = UDPHEADER_LENGTH;
+	uint16_t ipheaderlen = IPV4HEADER_BASICLENGTH;
+	uint16_t ethlen = ETHERNETHEADER_LENGTH;
+	uint8_t *packet = (uint8_t *)malloc(packetlen);
+	memset(packet, 0, packetlen);
+
+	uint8_t *pudp = (packet + ipheaderlen + ethlen);
+	uint16_t datalen = udplen - ICMPV4HEADER_LENGTH;
+	uint8_t *data = (uint8_t *)malloc(datalen);
+	uint16_t i = 0;
+
+	// UDP 데이터 셋팅
+	memset(data, 0, datalen);
+	for (int i = 0; i < datalen; i++)
+		data[i] = i + 0x44;
+
+	uint32_t dstip = inet_addr("172.16.5.201");
+	SetUDP(packet, nicinfo->NICIPAddress, dstip, 1300, 1300, data, datalen);
+	free(data);
+
+	// IP 헤더 셋팅(-단편화 고려 x-)
+	uint8_t *pip = packet + ethlen;
+	datalen += ICMPV4HEADER_LENGTH;
+	SetIPPacket(
+		pip,
+		IPV4HEADER_BASICLENGTH,
+		0x3713,
+		0x0000,
+		128,
+		IPV4TYPE::UDP,
+		true,
+		(uint8_t *)&nicinfo->NICIPAddress,
+		(uint8_t *)&dstip,
+		(uint8_t *)pudp,
+		datalen);
+
+	// 이더넷 헤더 셋팅
+	SetETHHeaderWithARP(packet, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4), dstip);
+	// 패킷 전송
+	int ret = SendPacket(packet, packetlen);
+	return ret;
+}
+
+void CWPcapSendSocket::SetUDP(uint8_t* packet, uint32_t srcip, uint32_t dstip, uint16_t srcport, uint16_t dstport, uint8_t *data, uint16_t datalen)
+{
+	USHORT TotalLen = datalen + 20 + 8;
+	//Beginning of UDP Header
+	uint16_t TmpType;
+	
+	TmpType = htons(srcport);
+	memcpy((void*)(packet + 34), (void*)&TmpType, 2);
+	TmpType = htons(dstport);
+	memcpy((void*)(packet + 36), (void*)&TmpType, 2);
+	USHORT UDPTotalLen = htons(datalen + 8); // UDP Length does not include length of IP header
+	memcpy((void*)(packet + 38), (void*)&UDPTotalLen, 2);
+	//memcpy((void*)(FinalPacket+40),(void*)&TmpType,2); //checksum
+	memcpy((void*)(packet + 42), (void*)data, datalen);
+
+	unsigned short UDPChecksum = CalculateUDPChecksum(packet, data, datalen, srcip, dstip, htons(srcport), htons(dstport), 0x11);
+	memcpy((void*)(packet + 40), (void*)&UDPChecksum, 2);
+}
+
+uint16_t CWPcapSendSocket::BytesTo16(unsigned char X, unsigned char Y)
+{
+	unsigned short Tmp = X;
+	Tmp = Tmp << 8;
+	Tmp = Tmp | Y;
+	return Tmp;
+}
+
+uint16_t CWPcapSendSocket::CalculateUDPChecksum(uint8_t *packet, unsigned char* UserData, int UserDataLen, UINT SourceIP, UINT DestIP, USHORT SourcePort, USHORT DestinationPort, UCHAR Protocol)
+{
+	unsigned short CheckSum = 0;
+	unsigned short PseudoLength = UserDataLen + 8 + 9; //Length of PseudoHeader = Data Length + 8 bytes UDP header (2Bytes Length,2 Bytes Dst Port, 2 Bytes Src Port, 2 Bytes Checksum)
+	//+ Two 4 byte IP's + 1 byte protocol
+	PseudoLength += PseudoLength % 2; //If bytes are not an even number, add an extra.
+	unsigned short Length = UserDataLen + 8; // This is just UDP + Data length. needed for actual data in udp header
+
+	unsigned char* PseudoHeader = new unsigned char[PseudoLength];
+	for (int i = 0; i < PseudoLength; i++){ PseudoHeader[i] = 0x00; }
+
+	PseudoHeader[0] = 0x11;
+
+	memcpy((void*)(PseudoHeader + 1), (void*)(packet + 26), 8); // Source and Dest IP
+
+	Length = htons(Length);
+	memcpy((void*)(PseudoHeader + 9), (void*)&Length, 2);
+	memcpy((void*)(PseudoHeader + 11), (void*)&Length, 2);
+
+	memcpy((void*)(PseudoHeader + 13), (void*)(packet + 34), 2);
+	memcpy((void*)(PseudoHeader + 15), (void*)(packet + 36), 2);
+
+	memcpy((void*)(PseudoHeader + 17), (void*)UserData, UserDataLen);
+
+
+	for (int i = 0; i < PseudoLength; i += 2)
+	{
+		unsigned short Tmp = BytesTo16(PseudoHeader[i], PseudoHeader[i + 1]);
+		unsigned short Difference = 65535 - CheckSum;
+		CheckSum += Tmp;
+		if (Tmp > Difference){ CheckSum += 1; }
+	}
+	CheckSum = ~CheckSum; //One's complement
+	return CheckSum;
 }

@@ -36,7 +36,6 @@ protected:
 	int m_CurSel;
 	// NIC 정보 리스트 헤드
 	CNICInfoList m_NICInfoList;
-
 	// winpcap 에러 버퍼
 	char m_ErrBuffer[PCAP_ERRBUF_SIZE];
 
@@ -68,7 +67,6 @@ public:
 	const char* GetErrorBuffer();
 	// NIC정보 리스트 반환
 	CNICInfoList *GetNICInfoList();
-
 public:
 	CWPcapSocket();
 	virtual ~CWPcapSocket();

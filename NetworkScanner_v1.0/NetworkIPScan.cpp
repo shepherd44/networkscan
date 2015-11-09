@@ -145,6 +145,7 @@ void CNetworkIPScan::EndSend()
 		WaitForSingleObject(m_hSendThread->m_hThread, INFINITE);
 		m_hSendThread = NULL;
 		m_SendSock.CloseNetDevice();
+		m_SendSock.FindNetDevice();
 	}
 }
 
@@ -238,15 +239,16 @@ void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 	int index;
 	uint8_t mac[MACADDRESS_LENGTH] = { 0, };
 
-	// 패킷 전송ip가 결과 리스트 안에 있는지 확인
 	memcpy(&ip, iph->srcaddr, IPV4ADDRESS_LENGTH);
-
+	// 전송자가 나일 경우 리턴
 	if (ip == capsock->GetCurrentSelectNICInfo()->NICIPAddress)
 		return;
+
+	// 패킷 전송ip가 결과 리스트 안에 있는지 확인
 	index = ipstatlist->IsInItem(ip);
 	if (index == -1)
 		return;
-
+	// 있을 경우 IPStatus 상태에 따라 처리
 	else
 	{
 		switch (iph->protoid)
