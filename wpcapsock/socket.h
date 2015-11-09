@@ -66,6 +66,8 @@ public:
 	char *GetCurrentSelectNICName();
 	// 에러 버퍼 가져오기
 	const char* GetErrorBuffer();
+	// NIC정보 리스트 반환
+	CNICInfoList *GetNICInfoList();
 
 public:
 	CWPcapSocket();

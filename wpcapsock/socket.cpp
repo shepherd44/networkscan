@@ -125,3 +125,8 @@ char *CWPcapSocket::GetCurrentSelectNICName()
 	else
 		return m_NICInfoList.At(m_CurSel)->AdapterName;
 }
+
+CNICInfoList *CWPcapSocket::GetNICInfoList()
+{
+	return &m_NICInfoList;
+}

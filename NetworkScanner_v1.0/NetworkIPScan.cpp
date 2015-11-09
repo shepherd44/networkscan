@@ -24,6 +24,7 @@ void CNetworkIPScan::Scan(int nicindex)
 	// socket open
 	m_SendSock.OpenNetDevice(nicindex);
 	m_CaptureSock.OpenNetDevice(m_SendSock.GetCurrentSelectNICName());
+	m_CaptureSock.SetPacketFilter("arp and icmp");
 
 	// NIC IP가 스캔 범위 내부이면 확인 후 저장
 	NICInfo *nicinfo = const_cast<NICInfo *>(m_SendSock.GetCurrentSelectNICInfo());
@@ -128,6 +129,9 @@ void CNetworkIPScan::StartSend()
 	else
 	{
 		throw std::exception("send thread 생성 실패");
+#ifdef _DEBUG
+		AfxMessageBox(L"send thread 생성실패");
+#endif // _DEBUG
 	}
 
 	if (m_hSendThread == NULL)
@@ -236,6 +240,9 @@ void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 
 	// 패킷 전송ip가 결과 리스트 안에 있는지 확인
 	memcpy(&ip, iph->srcaddr, IPV4ADDRESS_LENGTH);
+
+	if (ip == capsock->GetCurrentSelectNICInfo()->NICIPAddress)
+		return;
 	index = ipstatlist->IsInItem(ip);
 	if (index == -1)
 		return;

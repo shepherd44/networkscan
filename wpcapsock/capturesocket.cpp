@@ -11,9 +11,10 @@ CWPcapCaptureSocket::~CWPcapCaptureSocket()
 
 }
 
-void CWPcapCaptureSocket::CreatePacketFilter(const char* filter)
+void CWPcapCaptureSocket::SetPacketFilter(const char* filter)
 {
 	pcap_compile(m_pCapHandler, &m_FilterCode, filter, 1, m_NICInfoList.At(m_CurSel)->Netmask);
+	pcap_setfilter(m_pCapHandler, &m_FilterCode);
 }
 
 // pcap_loop ¹öÀü

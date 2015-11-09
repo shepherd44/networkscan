@@ -205,5 +205,10 @@ BOOL CIPStatusList::Lock(DWORD timeout)
 	if (WaitForSingleObject(m_ListMutex, timeout) == WAIT_OBJECT_0)
 		return TRUE;
 	else
+	{
+#ifdef _DEBUG
+		AfxMessageBox(L"¶ô ½ÇÆÐ");
+#endif // _DEBUG
 		return FALSE;
+	}
 }

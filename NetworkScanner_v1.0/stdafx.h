@@ -36,6 +36,7 @@
 
 #include "NetworkScanner.h"
 #include "NetworkScannerDlg.h"
+#include "socket.h"
 
 
 

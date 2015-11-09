@@ -48,11 +48,13 @@ int CWPcapSendSocket::SetETHHeaderWithARP(uint8_t *packet, uint8_t *src, uint16_
 			SetETHHeader(packet, dstmac, m_NICInfoList.At(m_CurSel)->NICMACAddress, prototype);
 		// 없으면 ARP 요청
 		else
-			if (GetDstMAC(dstmac, dstip, 500) == -1)
+		{
+			if (GetDstMAC(dstmac, dstip, 1000) == -1)
 				goto error;
 			// ARP 응답 없으면 셋팅 안하고 종료
 			else
 				SetETHHeader(packet, dstmac, m_NICInfoList.At(m_CurSel)->NICMACAddress, prototype);
+		}
 		goto end;
 	}// 외부일 경우 ARP 테이블에서 게이트웨이 맥주소 가져온다
 	else
@@ -146,8 +148,12 @@ int CWPcapSendSocket::GetDstMAC(uint8_t *dstmac, uint32_t dstip, uint32_t timeou
 	uint32_t starttime = systime.wMilliseconds + systime.wSecond * 1000;
 	uint32_t endtime;
 
+	bpf_program filter;
+	pcap_compile(m_pCapHandler, &filter, "arp", 1, m_NICInfoList.At(m_CurSel)->Netmask);
+	pcap_setfilter(m_pCapHandler, &filter);
+
 	// ARP 요청을 보낸 뒤 확인
-	//for (int n = 0; n < 5; n++)
+	for (int n = 0; n < 5; n++)
 	{
 		// ARP 요청
 		SendARPRequest(dstip);
@@ -178,6 +184,7 @@ int CWPcapSendSocket::GetDstMAC(uint8_t *dstmac, uint32_t dstip, uint32_t timeou
 			}
 		}
 	}
+	pcap_freecode(&filter);
 	return -1;
 }
 
