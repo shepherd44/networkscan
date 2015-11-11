@@ -26,7 +26,6 @@ int CWPcapSendSocket::SetETHHeaderWithARP(uint8_t *packet, uint8_t *src, uint16_
 	PMIB_IPNETTABLE pMib = NULL;
 	GetARPTable(&pMib);
 
-	uint32_t maclen = MACADDRESS_LENGTH;
 	uint8_t dstmac[MACADDRESS_LENGTH];
 	memset(dstmac, 0, MACADDRESS_LENGTH);
 
@@ -49,9 +48,9 @@ int CWPcapSendSocket::SetETHHeaderWithARP(uint8_t *packet, uint8_t *src, uint16_
 		// 없으면 ARP 요청
 		else
 		{
+			// ARP 응답 없으면 셋팅 안하고 종료
 			if (GetDstMAC(dstmac, dstip, 1000) == -1)
 				goto error;
-			// ARP 응답 없으면 셋팅 안하고 종료
 			else
 				SetETHHeader(packet, dstmac, m_NICInfoList.At(m_CurSel)->NICMACAddress, prototype);
 		}
@@ -143,14 +142,15 @@ int CWPcapSendSocket::GetDstMAC(uint8_t *dstmac, uint32_t dstip, uint32_t timeou
 	uint8_t *packet = NULL;
 	SYSTEMTIME systime;
 
+	// ARP 필터 셋팅
+	bpf_program filter;
+	pcap_compile(m_pCapHandler, &filter, "arp", 1, m_NICInfoList.At(m_CurSel)->Netmask);
+	pcap_setfilter(m_pCapHandler, &filter);
+
 	// timeout 확인용 변수
 	GetSystemTime(&systime);
 	uint32_t starttime = systime.wMilliseconds + systime.wSecond * 1000;
 	uint32_t endtime;
-
-	bpf_program filter;
-	pcap_compile(m_pCapHandler, &filter, "arp", 1, m_NICInfoList.At(m_CurSel)->Netmask);
-	pcap_setfilter(m_pCapHandler, &filter);
 
 	// ARP 요청을 보낸 뒤 확인
 	for (int n = 0; n < 5; n++)
@@ -158,7 +158,7 @@ int CWPcapSendSocket::GetDstMAC(uint8_t *dstmac, uint32_t dstip, uint32_t timeou
 		// ARP 요청
 		SendARPRequest(dstip);
 		// 패킷 확인, 100개정도 확인하고 다시 시도
-		for (int i = 0; i < 100; i++)
+		for (int i = 0; i < 200; i++)
 		{
 			// timeout 확인
 			GetSystemTime(&systime);
@@ -184,6 +184,7 @@ int CWPcapSendSocket::GetDstMAC(uint8_t *dstmac, uint32_t dstip, uint32_t timeou
 			}
 		}
 	}
+	// 필터 해제
 	pcap_freecode(&filter);
 	return -1;
 }
@@ -251,15 +252,12 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 {
 	NICInfo *nicinfo = m_NICInfoList.At(m_CurSel);
 	uint16_t packetlen = ICMPV4ECHO_LENGTH + IPV4HEADER_BASICLENGTH + ETHERNETHEADER_LENGTH;
-	uint16_t icmpv4len = ICMPV4ECHO_LENGTH;
-	uint16_t ipheaderlen = IPV4HEADER_BASICLENGTH;
-	uint16_t ethlen = ETHERNETHEADER_LENGTH;
 	uint8_t *packet = (uint8_t *)malloc(packetlen);
 	memset(packet, 0, packetlen);
 
 	// ICMP 헤더 셋팅
-	uint8_t *picmp = (packet + ipheaderlen + ethlen);
-	uint16_t datalen = icmpv4len - ICMPV4HEADER_LENGTH;
+	uint8_t *picmp = (packet + IPV4HEADER_BASICLENGTH + ETHERNETHEADER_LENGTH);
+	uint16_t datalen = ICMPV4ECHO_LENGTH - ICMPV4HEADER_LENGTH;
 	uint8_t *data = (uint8_t *)malloc(datalen);
 	uint16_t i = 0;
 	memset(data, 0, datalen);
@@ -269,20 +267,11 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 	free(data);
 
 	// IP 헤더 셋팅
-	uint8_t *pip = packet + ethlen;
+	uint8_t *pip = packet + ETHERNETHEADER_LENGTH;
 	datalen += ICMPV4HEADER_LENGTH;
-	SetIPPacket(
-		pip,
-		IPV4HEADER_BASICLENGTH,
-		0x3713,
-		0x0000,
-		128,
-		IPV4TYPE::ICMP,
-		true,
-		(uint8_t *)&nicinfo->NICIPAddress,
-		(uint8_t *)&dstip,
-		(uint8_t *)picmp,
-		datalen);
+	SetIPPacket(pip, IPV4HEADER_BASICLENGTH, 0x3713, 0x0000,
+		128, IPV4TYPE::ICMP, true, (uint8_t *)&nicinfo->NICIPAddress,
+		(uint8_t *)&dstip, (uint8_t *)picmp, datalen);
 
 	// 이더넷 헤더 셋팅
 	SetETHHeaderWithARP(packet, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4), dstip);

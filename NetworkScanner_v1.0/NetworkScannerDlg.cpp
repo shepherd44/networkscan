@@ -510,9 +510,9 @@ void CNetworkScannerDlg::OnClose()
 {
 	m_ProgramState = SCANNIG_STATE::PROGRAM_END;
 	// 쓰레드 중지
+	EndListUpdateThread();
 	m_NetworkIPScan.EndSend();
 	m_NetworkIPScan.EndCapture();
-	EndListUpdateThread();
 
 	CDialogEx::OnClose();
 }

@@ -28,7 +28,7 @@ void CWPcapCaptureSocket::StartCapture(pcap_handler handler, int pckcnt)
 	pcap_loop(m_pCapHandler, pckcnt, CWPcapCaptureSocket::PrintPacket, (u_char *)&param);
 }
 
-// pcap_next 무한 루프 버전
+// pcap_next 무한 루프 버전(추 후 timeout과 패킷 갯수 처리)
 void CWPcapCaptureSocket::StartCapture(capture_handler handler, uint8_t *param, int timeout, int pckcnt)
 {
 	struct pcap_pkthdr pkthdr;

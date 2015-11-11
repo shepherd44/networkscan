@@ -24,6 +24,7 @@ void CNetworkIPScan::Scan(int nicindex)
 	// socket open
 	m_SendSock.OpenNetDevice(nicindex);
 	m_CaptureSock.OpenNetDevice(m_SendSock.GetCurrentSelectNICName());
+	// 캡처소켓 필터 셋팅
 	m_CaptureSock.SetPacketFilter("arp and icmp");
 
 	// NIC IP가 스캔 범위 내부이면 확인 후 저장
@@ -46,7 +47,6 @@ void CNetworkIPScan::Scan(int nicindex)
 
 	// 패킷 전송 스레드 시작
 	StartSend();
-
 }
 
 // 패킷 전송 스레드 함수
