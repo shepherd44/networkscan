@@ -122,7 +122,6 @@ TEST_F(CWPcapSocketTest, SendSocket_SetICMPV4ECHO)
 
 void PrintPacket(const u_char *param, const u_char *pkt_data)
 {
-	(param);
 	ETHHeader *ethh = (ETHHeader *)pkt_data;
 	PIPV4Header iph;
 	printf("-------------------------------------------\n");

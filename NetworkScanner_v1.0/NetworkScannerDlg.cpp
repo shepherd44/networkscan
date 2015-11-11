@@ -176,6 +176,16 @@ HCURSOR CNetworkScannerDlg::OnQueryDragIcon()
 
 void CNetworkScannerDlg::OnBnClickedBtnScan()
 {
+	switch (m_ProgramState)
+	{
+		case SCANNIG_STATE::SCANNIG:
+		case SCANNIG_STATE::SCANNING_ARPSEND:
+		case SCANNIG_STATE::SCANNING_PINGSEND:
+		case SCANNIG_STATE::SCANNING_SENDINGCOMPLETE:
+			return;
+		default:
+			break;
+	}
 	m_ProgramState = SCANNIG_STATE::SCANNIG;
 	// 버튼 클릭 제한
 	// NIC 선택창
@@ -211,11 +221,31 @@ void CNetworkScannerDlg::OnBnClickedBtnStopAll()
 }
 void CNetworkScannerDlg::OnBnClickedBtnStopSend()
 {
+	if (m_ProgramState == SCANNIG_STATE::STOP_RECV)
+	{
+		m_ProgramState = SCANNIG_STATE::STOP_ALL;
+		m_NetworkIPScan.EndSend();
+		CButton *btn = (CButton *)GetDlgItem(ID_BTN_NICDETAIL);
+		btn->EnableWindow(TRUE);
+		m_ComboCtrlNICInfo.EnableWindow(TRUE);
+	}
+	else if (m_ProgramState == SCANNIG_STATE::STOP_ALL)
+		return;
 	m_ProgramState = SCANNIG_STATE::STOP_SEND;
 	m_NetworkIPScan.EndSend();
 }
 void CNetworkScannerDlg::OnBnClickedBtnStopRecv()
 {
+	if (m_ProgramState == SCANNIG_STATE::STOP_SEND)
+	{
+		m_ProgramState = SCANNIG_STATE::STOP_ALL;
+		m_NetworkIPScan.EndSend();
+		CButton *btn = (CButton *)GetDlgItem(ID_BTN_NICDETAIL);
+		btn->EnableWindow(TRUE);
+		m_ComboCtrlNICInfo.EnableWindow(TRUE);
+	}
+	else if (m_ProgramState == SCANNIG_STATE::STOP_ALL)
+		return;
 	m_ProgramState = SCANNIG_STATE::STOP_RECV;
 	m_NetworkIPScan.EndCapture();
 }
@@ -244,10 +274,10 @@ void CNetworkScannerDlg::OnBnClickedBtnScanAddip()
 	
 	m_NetworkIPScan.IPStatusListInsertItem(hbeginip, hendip);
 
-	int size = iplist->GetSize();
-
 	ViewUpdate();
+	int size = iplist->GetSize();
 	m_ListCtrlScanResult.SetItemCount(size);
+
 }
 void CNetworkScannerDlg::OnBnClickedBtnScanRemoveip()
 {
@@ -488,14 +518,13 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 		int size = iplist->GetSize();
 		for (int i = 0; i < size; i++)
 		{
-			maindlg->m_ListCtrlScanResult.RedrawItems(i,i);
+			maindlg->m_ListCtrlScanResult.RedrawItems(i, i);
 		}
 		
-		
 		// 종료 메시지 확인
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 100; i++)
 		{
-			Sleep(100);
+			Sleep(10);
 			if (maindlg->m_IsListUpdateThreadDye)
 				break;
 		}

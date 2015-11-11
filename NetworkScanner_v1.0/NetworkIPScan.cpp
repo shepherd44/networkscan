@@ -97,9 +97,12 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 			// 스레드 종료 확인
 			if (*isdye)
 				return 0;
+			iplist->Lock(INFINITE);
 			ip = iplist->At(i)->IPAddress;
+			iplist->Unlock();
 			hip = ntohl(ip);
 			sendsock->SendICMPV4ECHORequest(ip);
+			size = iplist->GetSize();
 		}
 
 		for (i = 0; i < scanner->GetSendInterval() / 10; i++)
@@ -165,8 +168,6 @@ void CNetworkIPScan::Analyze(const uint8_t *param, const uint8_t *packet)
 	default:
 		break;
 	}
-	
-	
 }
 void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 {

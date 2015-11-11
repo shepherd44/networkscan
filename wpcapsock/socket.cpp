@@ -30,9 +30,8 @@ void CWPcapSocket::FindNetDevice()
 		throw WPcapSocketException("DeviceFindError\n");
 	
 	// 네트워크 디바이스 정보 얻기
-	DWORD size = sizeof(PIP_ADAPTER_INFO);
-	PIP_ADAPTER_INFO Info;
-	ZeroMemory(&Info, size);
+	DWORD size = 0;
+	PIP_ADAPTER_INFO Info = NULL;
 
 	// 네트워크 인터페이스 정보 가져오기
 	int result = GetAdaptersInfo(Info, &size);
