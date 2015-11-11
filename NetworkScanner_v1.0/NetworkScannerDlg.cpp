@@ -292,15 +292,17 @@ void CNetworkScannerDlg::ComboBoxInit()
 	NICInfo *nicinfo;
 	int size = nicinfolist->GetSize();
 	char des[28];
-	memset(des, '\0', 28);
 	for (int i = 0; i < size; i++)
 	{
 		nicinfo = nicinfolist->At(i);
+		memset(des, '\0', 28);
 		if (strlen(nicinfo->Description) > 25)
 		{
 			memcpy(des, nicinfo->Description, 24);
 			memcpy(des + 24, "...", 4);
 		}
+		else
+			memcpy(des, nicinfo->Description, strlen(nicinfo->Description));
 		m_ComboCtrlNICInfo.AddString(CString(des));
 	}
 	
