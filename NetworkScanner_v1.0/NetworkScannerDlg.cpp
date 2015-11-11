@@ -470,7 +470,7 @@ void CNetworkScannerDlg::EndListUpdateThread()
 	{
 		m_IsListUpdateThreadDye = true;
 		WaitForSingleObject(m_ListUpdateThread, INFINITE);
-		Sleep(100);
+		//Sleep(100);
 		m_ListUpdateThread = NULL;
 	}
 }
