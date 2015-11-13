@@ -27,13 +27,13 @@ void CNetworkIPScan::Scan(int nicindex)
 	// 캡처소켓 필터 셋팅
 	m_CaptureSock.SetPacketFilter("arp and icmp");
 
-	// NIC IP가 스캔 범위 내부이면 확인 후 저장
+	// 내 PC IP 상태 처리
 	NICInfo *nicinfo = const_cast<NICInfo *>(m_SendSock.GetCurrentSelectNICInfo());
 	int index = m_IPStatInfoList.IsInItem(nicinfo->NICIPAddress);
 	if (index != -1)
 		m_IPStatInfoList.UpdateItem(index, nicinfo->NICIPAddress, nicinfo->NICMACAddress, IPSTATUS::USING, false);
 
-	// GateWayIP가 스캔 범위 내부이면 확인 후 저장
+	// GateWayIP 상태 처리
 	uint8_t mac[MACADDRESS_LENGTH] = { 0, };
 	index = m_IPStatInfoList.IsInItem(nicinfo->GatewayIPAddress);
 	if (index != -1)
