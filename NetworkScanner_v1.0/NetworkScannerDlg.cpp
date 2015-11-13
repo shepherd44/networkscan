@@ -508,11 +508,8 @@ UINT AFX_CDECL CNetworkScannerDlg::ListUpdateThreadFunc(LPVOID lpParam)
 {
 	CNetworkScannerDlg *maindlg = (CNetworkScannerDlg*)lpParam;
 	CIPStatusList *iplist = &maindlg->m_ViewListBuffer;
-	while (1)
+	while (!maindlg->m_IsListUpdateThreadDye)
 	{
-		if (maindlg->m_IsListUpdateThreadDye)
-			break;
-
 		maindlg->StatusBarCtrlUpdate();
 		maindlg->ViewUpdate();
 		int size = iplist->GetSize();
@@ -552,27 +549,20 @@ void CNetworkScannerDlg::ViewUpdate()
 {
 	CIPStatusList *captureitemlist = m_NetworkIPScan.GetIpStatusList();
 	IPStatusInfo *ipstat;
-	int size = captureitemlist->GetSize();
 	
 	m_ViewListBuffer.ClearList();
-	if (IsDlgButtonChecked(IDC_CHECK_HIDEDEADIP))
+	int size = captureitemlist->GetSize();
+	
+	for (int i = 0; i < size; i++)
 	{
-		for (int i = 0; i < size; i++)
+		ipstat = captureitemlist->At(i);
+		if (IsDlgButtonChecked(IDC_CHECK_HIDEDEADIP))
 		{
-			ipstat = captureitemlist->At(i);
 			if (ipstat->IPStatus != IPSTATUS::NOTUSING)
 				m_ViewListBuffer.AddItem(ipstat->IPAddress, ipstat->MACAddress, ipstat->IPStatus, ipstat->PingReply);
 		}
-	}
-	else
-	{
-		for (int i = 0; i < size; i++)
-		{
-			if (i == 292)
-				Sleep(0);
-			ipstat = captureitemlist->At(i);
+		else
 			m_ViewListBuffer.AddItem(ipstat->IPAddress, ipstat->MACAddress, ipstat->IPStatus, ipstat->PingReply);
-		}
 	}
 }
 

@@ -35,6 +35,7 @@ void CWPcapSocket::FindNetDevice()
 
 	// 네트워크 인터페이스 정보 가져오기
 	int result = GetAdaptersInfo(Info, &size);
+
 	if (result == ERROR_BUFFER_OVERFLOW) {
 		Info = (PIP_ADAPTER_INFO)malloc(size);
 		GetAdaptersInfo(Info, &size);

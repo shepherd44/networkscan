@@ -34,10 +34,8 @@ void CWPcapCaptureSocket::StartCapture(capture_handler handler, uint8_t *param, 
 	struct pcap_pkthdr pkthdr;
 	u_char* packet;
 	m_IsCapture = true;
-	while (1)
+	while (m_IsCapture)
 	{	
-		if (!m_IsCapture)
-			break;
 		packet = NULL;
 		packet = (u_char *)pcap_next(m_pCapHandler, &pkthdr);
 		// 패킷 처리 콜백 함수 실행

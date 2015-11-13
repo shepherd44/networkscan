@@ -66,7 +66,7 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 	uint32_t hendnetwork = hstartnetwork + ~hnetmask;
 	uint32_t ip, hip;
 	
-	while (1)
+	while (!*isdye)
 	{
 		// 프로그램 상태바 업데이트
 		maindlg->SetProgramState(SCANNIG_STATE::SCANNING_ARPSEND);
