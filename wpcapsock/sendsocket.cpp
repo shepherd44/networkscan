@@ -259,7 +259,6 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 	uint8_t *picmp = (packet + IPV4HEADER_BASICLENGTH + ETHERNETHEADER_LENGTH);
 	uint16_t datalen = ICMPV4ECHO_LENGTH - ICMPV4HEADER_LENGTH;
 	uint8_t *data = (uint8_t *)malloc(datalen);
-	uint16_t i = 0;
 	memset(data, 0, datalen);
 	for (int i = 0; i < datalen; i++)
 		data[i] = i + 0x60;
@@ -292,6 +291,7 @@ void CWPcapSendSocket::SetICMPV4Packet(uint8_t *out, uint8_t type, uint8_t code,
 	icmph->identifier = iden;
 	icmph->seqnum = seq;
 	memcpy(out + ICMPV4HEADER_LENGTH, data, datalen);
+	// Ã¼Å©¼¶ °è»ê
 	icmph->checksum = ICMPV4HeaderChecksum(len, (uint8_t*)out);
 	icmph->checksum = htons(icmph->checksum);
 }
@@ -299,6 +299,8 @@ void CWPcapSendSocket::SetICMPV4Packet(uint8_t *out, uint8_t type, uint8_t code,
 bool CWPcapSendSocket::IsInNet(uint32_t ip)
 {
 	NICInfo *NICInfo = m_NICInfoList.At(m_CurSel);
+	if (NICInfo == NULL)
+		throw WPcapSocketException("This Socket is not open.");
 	uint32_t netmask = NICInfo->Netmask;
 	uint32_t nicip = NICInfo->NICIPAddress;
 	uint32_t net = nicip & netmask;
