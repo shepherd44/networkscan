@@ -62,7 +62,7 @@ TEST(NICInfoListTest, ListTest)
 TEST_F(CWPcapSocketTest, SocketEmptyInit)
 {
 	// ÇöÀç 
-	ASSERT_EQ(0, m_wpcapsock.GetNicNumber());
+	ASSERT_EQ(0, m_wpcapsock.GetNICCount());
 	
 	ASSERT_EQ((u_long)NULL, (u_long)m_wpcapsock.m_pAllNIC);
 	ASSERT_EQ(NULL, m_wpcapsock.m_pCapHandler);
@@ -73,7 +73,7 @@ TEST_F(CWPcapSocketTest, SocketOpenNetDevice0)
 {
 	m_wpcapsock.OpenNetDevice();
 	
-	ASSERT_EQ(3, m_wpcapsock.GetNicNumber());
+	ASSERT_EQ(3, m_wpcapsock.GetNICCount());
 
 	ASSERT_NE((u_long)NULL, (u_long)m_wpcapsock.m_pAllNIC);
 	ASSERT_NE((u_long)NULL, (u_long)m_wpcapsock.m_pCapHandler);
@@ -83,7 +83,7 @@ TEST_F(CWPcapSocketTest, SocketOpenNetDevice0)
 TEST_F(CWPcapSocketTest, SocketOpenNetDevice1)
 {
 	m_wpcapsock.OpenNetDevice(1);
-	ASSERT_EQ(3, m_wpcapsock.GetNicNumber());
+	ASSERT_EQ(3, m_wpcapsock.GetNICCount());
 
 	ASSERT_NE((u_long)NULL, (u_long)m_wpcapsock.m_pAllNIC);
 	ASSERT_NE((u_long)NULL, (u_long)m_wpcapsock.m_pCapHandler);

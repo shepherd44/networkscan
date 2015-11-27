@@ -18,11 +18,25 @@ enum IPSTATUS
 // IP 상태 저장 구조체
 typedef struct IPStatusInfo
 {
-	uint32_t IPAddress;
-	uint8_t MACAddress[6];
-	IPSTATUS IPStatus;
-	bool	PingReply;
-	ListHead list;
+	uint32_t	IPAddress;		// IP Address
+	uint8_t		MACAddress[6];	// MAC
+	IPSTATUS	IPStatus;
+	
+	// ARP Info
+	//bool		IsARPPingSend;
+	//struct timeval LastARPSendTime;
+	//struct timeval LastARPRecvTime;
+	//int	SendRecvInterval;
+	// Ping Info
+	//bool		IsIPPingSend;
+	//struct timeval LastPingSendTime;
+	//struct timeval LastPingRecvTime;
+	bool		PingReply;
+
+	//int DuplicateIP
+	
+	// uint8_t dupmacaddr;
+	ListHead	list;	// list head
 }IPStatusInfo;
 
 class CIPStatusList
@@ -33,6 +47,8 @@ class CIPStatusList
 
 public:
 	void AddItem(uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
+	//void AddItem(IPStatusInfo ipinfo);
+	//void AddItem(IPStatusInfo *ipinfo);
 	void InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
 	void UpdateItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
 	void UpdateItemARPInfo(int index, uint8_t *mac, IPSTATUS ipstat);

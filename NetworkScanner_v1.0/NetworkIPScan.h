@@ -51,7 +51,7 @@ public:
 	// 패킷 캡쳐 함수
 	// @ lpParam: 스레드 파라미터 전송
 	static UINT AFX_CDECL CaptureThreadFunc(LPVOID lpParam);
-	// 패킷 캡처 시작
+	// 패킷 캡처 시작(sniffer)
 	void StartCapture();	
 	// 패킷 캡처 종료
 	void EndCapture();		
@@ -71,7 +71,7 @@ public:
 	// NIC 정보 리스트 가져오기
 	CNICInfoList *GetNicInfoList()
 	{
-		return &(m_SendSock.m_NICInfoList);
+		return m_SendSock.GetNICInfoList();
 	}
 	
 	// IPStatus List 가져오기

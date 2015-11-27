@@ -19,8 +19,6 @@ void CWPcapSocket::SockInit()
 	m_pAllNIC = NULL;
 	m_pCapHandler = NULL;
 	memset(m_ErrBuffer, '\0', sizeof(m_ErrBuffer));
-
-	//FindNetDevice();
 }
 
 // 작동중인 네트워크 디바이스 찾고 NICInfo에 채워넣기
@@ -65,7 +63,6 @@ void CWPcapSocket::FindNetDevice()
 		throw WPcapSocketException("No Network Interface Found\n");
 }
 
-// 네트워크 인터페이스 연결(0부터 시작)
 void CWPcapSocket::OpenNetDevice(int index)
 {
 	if (m_pAllNIC == NULL)
@@ -93,8 +90,6 @@ void CWPcapSocket::OpenNetDevice(const char *nicname)
 		if (m_pCapHandler == NULL)
 			throw WPcapSocketException("pcap open error");
 	}
-	
-	
 }
 
 void CWPcapSocket::CloseNetDevice()
@@ -114,7 +109,7 @@ void CWPcapSocket::CloseNetDevice()
 	}
 }
 
-int CWPcapSocket::GetNicNumber() { return m_NICInfoList.GetSize(); }
+int CWPcapSocket::GetNICCount() { return m_NICInfoList.GetSize(); }
 const char* CWPcapSocket::GetErrorBuffer() { return m_ErrBuffer; }
 int CWPcapSocket::GetCurrentSelectNICNum() { return m_CurSel; }
 const NICInfo* CWPcapSocket::GetCurrentSelectNICInfo() { return m_NICInfoList.At(m_CurSel); }
