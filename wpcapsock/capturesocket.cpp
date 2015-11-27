@@ -2,54 +2,57 @@
 
 CWPcapCaptureSocket::CWPcapCaptureSocket() : CWPcapSocket()
 {
-	m_IsCapture = false;
-	memset(&m_FilterCode, 0, sizeof(bpf_program));
-	m_FilterCode.bf_len = -1;
+	m_IsCapturing = false;
 }
 CWPcapCaptureSocket::~CWPcapCaptureSocket()
 {
 
 }
 
-void CWPcapCaptureSocket::SetPacketFilter(const char* filter)
+int CWPcapCaptureSocket::SetPacketFilter(const char* filter)
 {
-	pcap_compile(m_pCapHandler, &m_FilterCode, filter, 1, m_NICInfoList.At(m_CurSel)->Netmask);
-	pcap_setfilter(m_pCapHandler, &m_FilterCode);
+	struct bpf_program filtercode;
+	if (pcap_compile(m_pCapHandler, &filtercode, filter, 1, 0xffffffff) < 0)
+	{
+		strcpy(m_ErrBuffer, pcap_geterr(m_pCapHandler));
+		throw WPcapSocketException(m_ErrBuffer);
+	}
+	
+	if (pcap_setfilter(m_pCapHandler, &filtercode) < 0)
+		return -1;
+	pcap_freecode(&filtercode);
+	return 0;
 }
 
 // pcap_loop 버전
 void CWPcapCaptureSocket::StartCapture(pcap_handler handler, int pckcnt)
 {
-	static struct PCapLoopParam param;
-	m_IsCapture = true;
-	pcap_setfilter(m_pCapHandler, &m_FilterCode);
-	param.param_stop = &m_IsCapture;
+	struct PCapLoopParam param;
+	m_IsCapturing = true;
+	param.param_stop = &m_IsCapturing;
 	param.param_pcaphandle = m_pCapHandler;
 	pcap_loop(m_pCapHandler, pckcnt, CWPcapCaptureSocket::PrintPacket, (u_char *)&param);
 }
 
-// pcap_next 무한 루프 버전(추 후 timeout과 패킷 갯수 처리)
-void CWPcapCaptureSocket::StartCapture(capture_handler handler, uint8_t *param, int timeout, int pckcnt)
+void CWPcapCaptureSocket::StartCapture(capture_handler callback, uint8_t *param, int timeout, int pckcnt)
 {
 	struct pcap_pkthdr pkthdr;
 	u_char* packet;
-	m_IsCapture = true;
-	while (m_IsCapture)
+	m_IsCapturing = true;
+	while (m_IsCapturing)
 	{	
 		packet = NULL;
 		packet = (u_char *)pcap_next(m_pCapHandler, &pkthdr);
 		// 패킷 처리 콜백 함수 실행
-		if (handler != NULL && packet != NULL)
-			handler(param, packet);
+		if (callback != NULL && packet != NULL)
+			callback(param, packet);
 	}
 	return;
 }
 
 void CWPcapCaptureSocket::EndCapture()
 {
-	m_IsCapture = false;
-	if (m_FilterCode.bf_len != -1)
-		pcap_freecode(&m_FilterCode);
+	m_IsCapturing = false;
 }
 
 void CWPcapCaptureSocket::PrintPacket(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data)

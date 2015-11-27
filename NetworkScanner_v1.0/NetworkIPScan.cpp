@@ -25,7 +25,7 @@ void CNetworkIPScan::Scan(int nicindex)
 	m_SendSock.OpenNetDevice(nicindex);
 	m_CaptureSock.OpenNetDevice(m_SendSock.GetCurrentSelectNICName());
 	// 캡처소켓 필터 셋팅
-	m_CaptureSock.SetPacketFilter("arp and icmp");
+	m_CaptureSock.SetPacketFilter("arp or icmp");
 
 	// 내 PC IP 상태 처리
 	NICInfo *nicinfo = const_cast<NICInfo *>(m_SendSock.GetCurrentSelectNICInfo());

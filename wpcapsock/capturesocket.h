@@ -18,25 +18,27 @@ struct PCapLoopParam
 
 class CWPcapCaptureSocket : public CWPcapSocket
 {
-#ifdef _DEBUG
-public:
-#else // _DEBUG
 protected:
-#endif // _DEBUG
 	// winpcap 패킷 캡쳐 필터
-	char *m_pPacketFilter;
+	//char *m_pPacketFilter;
 	// winpcap 프로그램된 필터
-	struct bpf_program m_FilterCode;
+	//struct bpf_program m_FilterCode;
 
-	bool m_IsCapture;
+	bool m_IsCapturing;
 
 public:
-	static void PrintPacket(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data);
-	void SetPacketFilter(const char* filter = NULL);
+	// 캡처 필터 설정
+	// 설정에 따른 필터 자동 생성하도록 수정 필요
+	int SetPacketFilter(const char* filter = NULL);
+	// pcap_loop 버전
 	void StartCapture(pcap_handler handler, int pckcnt = 0);
-	void StartCapture(capture_handler handler, u_char *param, int timeout, int pckcnt);
+	// pcap_next로 구현(추 후 timeout과 패킷 갯수 처리)
+	void StartCapture(capture_handler callback, u_char *param, int timeout, int pckcnt);
+	// 캡쳐 종료
 	void EndCapture();
-	void SetFilter(char *filter);
+
+	// 패킷 출력 함수(핸들러 예제용)
+	static void PrintPacket(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data);
 public:
 	CWPcapCaptureSocket();
 	virtual ~CWPcapCaptureSocket();
