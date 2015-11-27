@@ -125,7 +125,7 @@ public:
 	afx_msg void OnBnClickedBtnScan();			// 스캔 시작 버튼
 	afx_msg void OnBnClickedBtnStopAll();		// 스캔 중지
 	afx_msg void OnBnClickedBtnStopSend();		// 패킷 전송 중지
-	afx_msg void OnBnClickedBtnStopRecv();		// 패킷 캡처 중지
+//	afx_msg void OnBnClickedBtnStopRecv();		// 패킷 캡처 중지
 	afx_msg void OnBnClickedBtnNicdetail();		// NIC 정보 자세히 보기
 	afx_msg void OnBnClickedBtnScanAddip();		// IP 추가
 	afx_msg void OnBnClickedBtnScanRemoveip();	// IP 제거

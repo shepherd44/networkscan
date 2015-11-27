@@ -67,7 +67,7 @@ BEGIN_MESSAGE_MAP(CNetworkScannerDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(ID_BTN_SCAN, &CNetworkScannerDlg::OnBnClickedBtnScan)
 	ON_BN_CLICKED(ID_BTN_STOP_SEND, &CNetworkScannerDlg::OnBnClickedBtnStopSend)
-	ON_BN_CLICKED(ID_BTN_STOP_RECV, &CNetworkScannerDlg::OnBnClickedBtnStopRecv)
+//	ON_BN_CLICKED(ID_BTN_STOP_RECV, &CNetworkScannerDlg::OnBnClickedBtnStopRecv)
 	ON_BN_CLICKED(ID_BTN_STOP_ALL, &CNetworkScannerDlg::OnBnClickedBtnStopAll)
 	ON_BN_CLICKED(ID_BTN_NICDETAIL, &CNetworkScannerDlg::OnBnClickedBtnNicdetail)
 	ON_BN_CLICKED(ID_BTN_SCAN_ADDIP, &CNetworkScannerDlg::OnBnClickedBtnScanAddip)
@@ -234,21 +234,21 @@ void CNetworkScannerDlg::OnBnClickedBtnStopSend()
 	m_ProgramState = SCANNIG_STATE::STOP_SEND;
 	m_NetworkIPScan.EndSend();
 }
-void CNetworkScannerDlg::OnBnClickedBtnStopRecv()
-{
-	if (m_ProgramState == SCANNIG_STATE::STOP_SEND)
-	{
-		m_ProgramState = SCANNIG_STATE::STOP_ALL;
-		m_NetworkIPScan.EndSend();
-		CButton *btn = (CButton *)GetDlgItem(ID_BTN_NICDETAIL);
-		btn->EnableWindow(TRUE);
-		m_ComboCtrlNICInfo.EnableWindow(TRUE);
-	}
-	else if (m_ProgramState == SCANNIG_STATE::STOP_ALL)
-		return;
-	m_ProgramState = SCANNIG_STATE::STOP_RECV;
-	m_NetworkIPScan.EndCapture();
-}
+//void CNetworkScannerDlg::OnBnClickedBtnStopRecv()
+//{
+//	if (m_ProgramState == SCANNIG_STATE::STOP_SEND)
+//	{
+//		m_ProgramState = SCANNIG_STATE::STOP_ALL;
+//		m_NetworkIPScan.EndSend();
+//		CButton *btn = (CButton *)GetDlgItem(ID_BTN_NICDETAIL);
+//		btn->EnableWindow(TRUE);
+//		m_ComboCtrlNICInfo.EnableWindow(TRUE);
+//	}
+//	else if (m_ProgramState == SCANNIG_STATE::STOP_ALL)
+//		return;
+//	m_ProgramState = SCANNIG_STATE::STOP_RECV;
+//	m_NetworkIPScan.EndCapture();
+//}
 // NIC Information 자세히 보기 버튼 처리
 void CNetworkScannerDlg::OnBnClickedBtnNicdetail()
 {
