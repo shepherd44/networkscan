@@ -272,8 +272,24 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 		128, IPV4TYPE::ICMP, true, (uint8_t *)&nicinfo->NICIPAddress,
 		(uint8_t *)&dstip, (uint8_t *)picmp, datalen);
 
+	// 이더넷 헤더 셋팅 Window ARP table 사용버전
+	// 현재 해당 함수에 문제가 있어 게이트웨이 맥주소를 Window ARP table에서 직접 찾아 셋팅하는
+	// 방법으로 대체
+	//SetETHHeaderWithARP(packet, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4), dstip);
+	
 	// 이더넷 헤더 셋팅
-	SetETHHeaderWithARP(packet, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4), dstip);
+	// 직접 게이트웨이 맥주소를 ARP 테이블에서 찾아 셋팅한다.
+	PMIB_IPNETTABLE pMib = NULL;
+	GetARPTable(&pMib);
+	uint8_t dstmac[MACADDRESS_LENGTH];
+	memset(dstmac, 0, MACADDRESS_LENGTH);
+	// 게이트웨이 맥주소 확인
+	for (DWORD i = 0; i < pMib->dwNumEntries; i++)
+		if (pMib->table[i].dwAddr == m_NICInfoList.At(m_CurSel)->GatewayIPAddress)
+			memcpy(dstmac, pMib->table[i].bPhysAddr, pMib->table[i].dwPhysAddrLen);
+	SetETHHeader(packet, dstmac, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4));
+	free(pMib);
+	
 
 	// 패킷 전송
 	int ret = SendPacket(packet, packetlen);

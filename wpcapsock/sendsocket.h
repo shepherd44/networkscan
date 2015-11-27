@@ -42,7 +42,6 @@ public:
 	
 	// ICMP Send
 	int SendICMPV4ECHORequest(uint32_t dstip);
-	int SendICMPV4ECHORequest(uint32_t dstip, uint8_t *dstmac);
 
 	// UDP Àü¼Û
 	int SendUDP(uint32_t dstip, uint16_t dstport, uint16_t srcport, uint8_t *data, uint16_t datalen);
