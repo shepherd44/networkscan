@@ -310,45 +310,35 @@ bool CWPcapSendSocket::IsInNet(uint32_t ip)
 		return false;
 }
 
-int CWPcapSendSocket::SendUDP()
+int CWPcapSendSocket::SendUDP(uint32_t dstip, uint16_t dstport, uint16_t srcport, uint8_t *data, uint16_t datalen)
 {
 	NICInfo *nicinfo = m_NICInfoList.At(m_CurSel);
 	uint16_t packetlen = UDPHEADER_LENGTH + IPV4HEADER_BASICLENGTH + ETHERNETHEADER_LENGTH;
-	uint16_t udplen = UDPHEADER_LENGTH;
-	uint16_t ipheaderlen = IPV4HEADER_BASICLENGTH;
-	uint16_t ethlen = ETHERNETHEADER_LENGTH;
 	uint8_t *packet = (uint8_t *)malloc(packetlen);
 	memset(packet, 0, packetlen);
 
-	uint8_t *pudp = (packet + ipheaderlen + ethlen);
-	uint16_t datalen = udplen - ICMPV4HEADER_LENGTH;
-	uint8_t *data = (uint8_t *)malloc(datalen);
+	uint8_t *pudp = (packet + IPV4HEADER_BASICLENGTH + ETHERNETHEADER_LENGTH);
 	uint16_t i = 0;
 
-	// UDP 데이터 셋팅
-	memset(data, 0, datalen);
-	for (int i = 0; i < datalen; i++)
-		data[i] = i + 0x44;
+	// UDP 헤더 셋팅
+	SetUDP(packet, nicinfo->NICIPAddress, dstip, srcport, dstport, data, datalen);
 
-	uint32_t dstip = inet_addr("172.16.5.201");
-	SetUDP(packet, nicinfo->NICIPAddress, dstip, 1300, 1300, data, datalen);
-	free(data);
-
-	// IP 헤더 셋팅(-단편화 고려 x-)
-	uint8_t *pip = packet + ethlen;
+	// IP 헤더 셋팅
+	uint8_t *pip = packet + ETHERNETHEADER_LENGTH;
 	datalen += ICMPV4HEADER_LENGTH;
 	SetIPPacket(
 		pip,
 		IPV4HEADER_BASICLENGTH,
-		0x3713,
-		0x0000,
-		128,
-		IPV4TYPE::UDP,
-		true,
-		(uint8_t *)&nicinfo->NICIPAddress,
+		0x3713,		// identification
+		0x0000,		// flags
+		128,		// ttl
+		IPV4TYPE::UDP,	// protocol type
+		true,			// 체크섬 계산 여부
+		(uint8_t *)&nicinfo->NICIPAddress,	
 		(uint8_t *)&dstip,
 		(uint8_t *)pudp,
-		datalen);
+		datalen			// 데이터 길이
+		);	
 
 	// 이더넷 헤더 셋팅
 	SetETHHeaderWithARP(packet, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4), dstip);

@@ -10,11 +10,7 @@
 
 class CWPcapSendSocket : public CWPcapSocket
 {
-#ifdef _DEBUG
-public:
-#else // _DEBUG
 protected:
-#endif // _DEBUG
 	uint8_t *m_Packet;
 	int m_PacketLen;
 	uint8_t m_GatewayMAC[MACADDRESS_LENGTH];
@@ -46,9 +42,10 @@ public:
 	
 	// ICMP Send
 	int SendICMPV4ECHORequest(uint32_t dstip);
+	int SendICMPV4ECHORequest(uint32_t dstip, uint8_t *dstmac);
 
 	// UDP 전송
-	int SendUDP();
+	int SendUDP(uint32_t dstip, uint16_t dstport, uint16_t srcport, uint8_t *data, uint16_t datalen);
 	// UDP 헤더 셋팅
 	void SetUDP(uint8_t* packet, uint32_t srcip, uint32_t dstip, uint16_t srcport, uint16_t dstport, uint8_t *data, uint16_t datalen);
 	uint16_t BytesTo16(unsigned char X, unsigned char Y);
@@ -65,9 +62,6 @@ public:
 		uint8_t *data,
 		uint16_t datalen);
 	
-	// 플래그 옵션 주는 버전 필요
-	// ip 옵션 주는 버전 필요
-
 	// IP 패킷 작성
 	// @ packet: 패킷 작성할 버퍼 위치
 	// @ headerlen: ipv4 header length
@@ -98,7 +92,7 @@ public:
 	// @ pmib: 가져올 위치, 사용 후 free(pmib) 필요
 	int GetARPTable(PMIB_IPNETTABLE *pmib);
 
-	// 네트워크 내부의 주소인지 확인
+	// 동일한 네트워크 내부의 주소인지 확인(NIC 선택되었을 시 사용가능)
 	// @ ip: 확인할 주소
 	bool IsInNet(uint32_t ip);
 
