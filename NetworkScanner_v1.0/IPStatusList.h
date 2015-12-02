@@ -15,25 +15,31 @@ enum IPSTATUS
 	IPSTATUSEND			// 열거형 끝
 };
 
+typedef uint8_t MACAddr[6];
+
 // IP 상태 저장 구조체
 typedef struct IPStatusInfo
 {
+	//Target IP
 	uint32_t	IPAddress;		// IP Address
 	uint8_t		MACAddress[6];	// MAC
 	IPSTATUS	IPStatus;
 	
 	// ARP Info
-	//bool		IsARPPingSend;
-	//struct timeval LastARPSendTime;
-	//struct timeval LastARPRecvTime;
-	//int	SendRecvInterval;
+	bool		DoARPPingSend;
+	struct timeval LastARPSendTime;
+	struct timeval LastARPRecvTime;
+	
 	// Ping Info
-	//bool		IsIPPingSend;
-	//struct timeval LastPingSendTime;
-	//struct timeval LastPingRecvTime;
+	bool		DoIPPingSend;
+	struct timeval LastPingSendTime;
+	struct timeval LastPingRecvTime;
 	bool		PingReply;
 
-	//int DuplicateIP
+	// DuplicateIP List
+	// uint32_t *DuplicationIP;
+	//MACAddr *DuplicationMAC;
+	//int DuplicationMACNum;
 	
 	// uint8_t dupmacaddr;
 	ListHead	list;	// list head
@@ -54,10 +60,9 @@ class CIPStatusList
 	IPStatusInfo* At(int index);
 public:
 	void AddItem(uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
-	//void AddItem(IPStatusInfo ipinfo);
-	//void AddItem(IPStatusInfo *ipinfo);
+	void AddItem(IPStatusInfo *ipinfo);
 	void InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
-
+	void InsertItem(int index, IPStatusInfo *ipinfo);
 	// Update 함수
 	void UpdateItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
 	void UpdateItemARPInfo(int index, uint8_t *mac, IPSTATUS ipstat);
@@ -68,6 +73,11 @@ public:
 	int IsInItem(uint32_t ip);
 	void RemoveItem(PListHead ph);
 	void RemoveItem(int index);
+
+	// 스캔 재시작을 위한 초기화
+	// IP 목록
+	void ListInitForScan();
+	// 리스트 비우기
 	void ClearList();
 
 	// 리스트 아이템 얻기

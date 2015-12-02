@@ -213,6 +213,7 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 			case IPSTATUS::IPDUPLICATION:
 				if (strncmp((char*)item->MACAddress, (char*)mac, 6) == 0)
 					break;
+				// 맥 주소가 다를경우 IP 충돌 표시를 나타내고 MAC 목록을 추가한다.
 				else
 				{
 					ipstatlist->UpdateItemIPStat(index, IPDUPLICATION);
@@ -332,7 +333,19 @@ void CNetworkIPScan::IPStatusListInsertItem(uint32_t hbeginip, uint32_t hendip)
 		if (index == -1)
 			continue;
 		else
-			m_IPStatInfoList.InsertItem(index, htonl(hbeginip), mac, IPSTATUS::NOTUSING, false);
+		{
+			IPStatusInfo ipinfo;
+			memset(&ipinfo, 0, sizeof(IPStatusInfo));
+			ipinfo.DoARPPingSend = true;
+			ipinfo.DoIPPingSend = true;
+			ipinfo.IPAddress = htonl(hbeginip);
+			memcpy(ipinfo.MACAddress, mac, MACADDRESS_LENGTH);
+			ipinfo.IPStatus = IPSTATUS::NOTUSING;
+			ipinfo.PingReply = false;
+
+			m_IPStatInfoList.InsertItem(index, &ipinfo);
+			//m_IPStatInfoList.InsertItem(index, htonl(hbeginip), mac, IPSTATUS::NOTUSING, false);
+		}
 	}
 }
 

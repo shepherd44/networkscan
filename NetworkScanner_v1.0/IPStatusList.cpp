@@ -37,6 +37,44 @@ void CIPStatusList::AddItem(uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pin
 	Unlock();
 }
 
+void CIPStatusList::AddItem(IPStatusInfo *ipinfo)
+{
+	if (!Lock(INFINITE))
+		return;
+	IPStatusInfo *temp = new IPStatusInfo;
+	memcpy(temp, ipinfo, sizeof(IPStatusInfo));
+	// 리스트에 삽입
+	ListAddTail(&temp->list, &m_ListHead);
+	// 리스트 사이즈 증가
+	m_ListSize++;
+	Unlock();
+}
+
+void CIPStatusList::InsertItem(int index, IPStatusInfo *ipinfo)
+{
+	if (!Lock(INFINITE))
+		return;
+	PListHead lh;
+
+	if (index > m_ListSize)
+		return;
+	else
+	{
+		lh = &m_ListHead;
+		for (int i = 0; i < index; i++)
+			lh = lh->next;
+	}
+
+	IPStatusInfo *temp = new IPStatusInfo;
+	memcpy(temp, ipinfo, sizeof(IPStatusInfo));
+	// 리스트에 삽입
+	ListAdd(&temp->list, lh);
+	// 리스트 사이즈 증가
+	m_ListSize++;
+
+	Unlock();
+}
+
 void CIPStatusList::InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply)
 {
 	if (!Lock(INFINITE))
@@ -60,7 +98,7 @@ void CIPStatusList::InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ip
 
 	// 값 셋팅
 	temp->IPAddress = ip;
-	memcpy(temp->MACAddress, mac, 6);
+	memcpy(temp->MACAddress, mac, MACADDRESS_LENGTH);
 	temp->IPStatus = ipstat;
 	temp->PingReply = pingreply;
 

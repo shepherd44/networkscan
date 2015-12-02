@@ -249,7 +249,6 @@ void CNetworkScannerDlg::OnBnClickedBtnStopSend()
 //	m_ProgramState = SCANNIG_STATE::STOP_RECV;
 //	m_NetworkIPScan.EndCapture();
 //}
-// NIC Information 자세히 보기 버튼 처리
 void CNetworkScannerDlg::OnBnClickedBtnNicdetail()
 {
 	// 모달로 실행
