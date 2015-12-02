@@ -77,7 +77,7 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 			// 스레드 종료 확인
 			if (*isdye)
 				return 0;
-			ip = iplist->At(i)->IPAddress;
+			ip = iplist->GetItem(i)->IPAddress;
 			hip = ntohl(ip);
 			if (hip >= hstartnetwork && hip <= hendnetwork)
 				sendsock->SendARPRequest(ip);
@@ -98,7 +98,7 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 			if (*isdye)
 				return 0;
 			iplist->Lock(INFINITE);
-			ip = iplist->At(i)->IPAddress;
+			ip = iplist->GetItem(i)->IPAddress;
 			iplist->Unlock();
 			hip = ntohl(ip);
 			sendsock->SendICMPV4ECHORequest(ip);
@@ -201,7 +201,7 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 		{
 			memcpy(mac, arpp->shaddr, MACADDRESS_LENGTH);
 			index = ipstatlist->IsInItem(senderip);
-			IPStatusInfo *item = ipstatlist->At(index);
+			IPStatusInfo *item = ipstatlist->GetItem(index);
 			switch (item->IPStatus)
 			{
 			case IPSTATUS::NOTUSING:
@@ -256,7 +256,7 @@ void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 		{
 			case IPV4TYPE::ICMP:
 			{
-				IPSTATUS status = ipstatlist->At(index)->IPStatus;
+				IPSTATUS status = ipstatlist->GetItem(index)->IPStatus;
 
 				// NOTUSING 상태일 경우 ONLYPING으로 바꾸고
 				if (status == IPSTATUS::NOTUSING)

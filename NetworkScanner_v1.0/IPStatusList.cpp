@@ -187,9 +187,15 @@ void CIPStatusList::ClearList()
 	Unlock();
 }
 
-// index는 0부터, last item index == size - 1
-// At의 경우 스레드에 보호되지 않음. 
-// 내부 아이템을 사용중이라면 직접 lock을 걸고 사용중인 아이템이 보호되도록 해야함.
+IPStatusInfo* CIPStatusList::GetItem(int index)
+{
+	if (!Lock(INFINITE))
+		return NULL;
+	IPStatusInfo* itemtemp = At(index);
+	Unlock();
+	return itemtemp;
+}
+
 IPStatusInfo* CIPStatusList::At(int index)
 {
 	if (index >= m_ListSize)

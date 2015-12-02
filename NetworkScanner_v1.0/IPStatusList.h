@@ -45,11 +45,20 @@ class CIPStatusList
 	int m_ListSize;
 	HANDLE m_ListMutex;
 
+	// index는 0부터, last item index == size - 1
+	// At의 경우 스레드에 보호되지 않음.
+	// 내부 아이템을 사용중 다른 곳에서 지워버린다면 문제 발생 가능.
+	// 내부 아이템을 사용중이라면 직접 lock을 걸고 사용중인 아이템이 보호되도록 해야함.
+	// Update Log(2015.12.02): private로 전환
+	//  외부적으로 item을 얻어야할 경우 GetItem을 사용하도록 변경
+	IPStatusInfo* At(int index);
 public:
 	void AddItem(uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
 	//void AddItem(IPStatusInfo ipinfo);
 	//void AddItem(IPStatusInfo *ipinfo);
 	void InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
+
+	// Update 함수
 	void UpdateItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
 	void UpdateItemARPInfo(int index, uint8_t *mac, IPSTATUS ipstat);
 	void UpdateItemIPStat(int index, IPSTATUS ipstat);
@@ -61,11 +70,9 @@ public:
 	void RemoveItem(int index);
 	void ClearList();
 
-	// index는 0부터, last item index == size - 1
-	// At의 경우 스레드에 보호되지 않음.
-	// 내부 아이템을 사용중 다른 곳에서 지워버린다면 문제 발생 가능.
-	// 내부 아이템을 사용중이라면 직접 lock을 걸고 사용중인 아이템이 보호되도록 해야함.
-	IPStatusInfo* At(int index);
+	// 리스트 아이템 얻기
+	// 아이템의 내용을 고치는것에 대한 보호는 되어있지 않으므로 사용 시 주의
+	IPStatusInfo* GetItem(int index);
 
 	BOOL Lock(DWORD timeout);
 	void Unlock(){ ReleaseMutex(m_ListMutex); }

@@ -287,7 +287,7 @@ void CNetworkScannerDlg::OnBnClickedBtnScanRemoveip()
 	while (pos)
 	{
 		selected = m_ListCtrlScanResult.GetNextSelectedItem(pos);
-		int index = m_NetworkIPScan.GetIpStatusList()->IsInItem(m_ViewListBuffer.At(selected)->IPAddress);
+		int index = m_NetworkIPScan.GetIpStatusList()->IsInItem(m_ViewListBuffer.GetItem(selected)->IPAddress);
 		if (index == -1)
 			continue;
 		else
@@ -397,7 +397,7 @@ afx_msg void CNetworkScannerDlg::OnListIPStatusCustomdraw(NMHDR* pNMHDR, LRESULT
 		int nItem = static_cast<int>(pLVCD->nmcd.dwItemSpec);
 		
 		// »ö ÁöÁ¤
-		IPStatusInfo *item = m_ViewListBuffer.At(nItem);
+		IPStatusInfo *item = m_ViewListBuffer.GetItem(nItem);
 		pLVCD->clrTextBk = IPSTATUS_CELLCOLOR(item->IPStatus);
 		*pResult = CDRF_DODEFAULT;
 	}
@@ -423,7 +423,7 @@ void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *
 	LV_ITEM* pItem = &(pDispInfo)->item;
 
 	int index = pItem->iItem;
-	ipstat = m_ViewListBuffer.At(index);
+	ipstat = m_ViewListBuffer.GetItem(index);
 	if (pItem->mask & LVIF_TEXT)
 	{
 		switch (pItem->iSubItem)
@@ -555,7 +555,7 @@ void CNetworkScannerDlg::ViewUpdate()
 	
 	for (int i = 0; i < size; i++)
 	{
-		ipstat = captureitemlist->At(i);
+		ipstat = captureitemlist->GetItem(i);
 		if (IsDlgButtonChecked(IDC_CHECK_HIDEDEADIP))
 		{
 			if (ipstat->IPStatus != IPSTATUS::NOTUSING)
