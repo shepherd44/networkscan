@@ -19,6 +19,9 @@ void CNetworkIPScan::InitializeAll()
 }
 
 // 스캔 시작
+
+
+
 void CNetworkIPScan::Scan(int nicindex)
 {
 	// socket open
@@ -30,16 +33,28 @@ void CNetworkIPScan::Scan(int nicindex)
 	// 내 PC IP 상태 처리
 	NICInfo *nicinfo = const_cast<NICInfo *>(m_SendSock.GetCurrentSelectNICInfo());
 	int index = m_IPStatInfoList.IsInItem(nicinfo->NICIPAddress);
+	IPStatusInfo* ipstat;
 	if (index != -1)
-		m_IPStatInfoList.UpdateItem(index, nicinfo->NICIPAddress, nicinfo->NICMACAddress, IPSTATUS::USING, false);
+	{
+		ipstat = m_IPStatInfoList.GetItem(index);
+		ipstat->IPAddress = nicinfo->NICIPAddress;
+		memcpy(ipstat->MACAddress, nicinfo->NICMACAddress, MACADDRESS_LENGTH);
+		ipstat->IPStatus = IPSTATUS::USING;
+	}
+		
 
 	// GateWayIP 상태 처리
 	uint8_t mac[MACADDRESS_LENGTH] = { 0, };
 	index = m_IPStatInfoList.IsInItem(nicinfo->GatewayIPAddress);
 	if (index != -1)
 	{
+		// Gateway Mac 주소 얻어오기;
 		m_SendSock.GetDstMAC(mac, nicinfo->GatewayIPAddress, 1000);
-		m_IPStatInfoList.UpdateItem(index, nicinfo->GatewayIPAddress, mac, IPSTATUS::USING_GATEWAY, false);
+		// ipstatus 설정
+		ipstat = m_IPStatInfoList.GetItem(index);
+		ipstat->IPAddress = nicinfo->GatewayIPAddress;
+		memcpy(ipstat->MACAddress, mac, MACADDRESS_LENGTH);
+		ipstat->IPStatus = IPSTATUS::USING_GATEWAY;
 	}
 		
 	// 패킷 캡처 스레드 시작(분석 함께 함)
@@ -48,6 +63,18 @@ void CNetworkIPScan::Scan(int nicindex)
 	// 패킷 전송 스레드 시작
 	StartSend();
 }
+
+
+int gettimeofday(struct timeval *tv, struct timeval *tz)
+{
+	struct _timeb timebuffer;
+
+	_ftime(&timebuffer);
+
+	tv->tv_sec = (long)timebuffer.time;
+	tv->tv_usec = timebuffer.millitm * 1000;
+	return 0;
+};
 
 // 패킷 전송 스레드 함수
 UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
@@ -58,9 +85,11 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 	CWPcapSendSocket *sendsock = scanner->GetSendSocket();
 	bool *isdye = (bool *)&scanner->m_IsSendThreadDye;
 	CIPStatusList *iplist = (CIPStatusList *)scanner->GetIpStatusList();
-	
+	IPStatusInfo *ipstat = NULL;
+
 	// 네트워크 주소 계산
 	NICInfo *nicinfo = const_cast<NICInfo *>(sendsock->GetCurrentSelectNICInfo());
+	// 호스트의 주소체계를 사용하면 h를 붙여둠
 	uint32_t hnetmask = ntohl(nicinfo->Netmask);
 	uint32_t hstartnetwork = hnetmask & ntohl(nicinfo->NICIPAddress);
 	uint32_t hendnetwork = hstartnetwork + ~hnetmask;
@@ -72,15 +101,22 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 		maindlg->SetProgramState(SCANNIG_STATE::SCANNING_ARPSEND);
 		int size = iplist->GetSize();
 		int i = 0;
+		// ARP 전송
 		for (; i < size; i++)
 		{
 			// 스레드 종료 확인
 			if (*isdye)
 				return 0;
-			ip = iplist->GetItem(i)->IPAddress;
+			ipstat = iplist->GetItem(i);
+			ip = ipstat->IPAddress;
 			hip = ntohl(ip);
 			if (hip >= hstartnetwork && hip <= hendnetwork)
+			{
+				timeval now;
+				gettimeofday(&now, NULL);
+				ipstat->LastARPSendTime = now;
 				sendsock->SendARPRequest(ip);
+			}
 		}
 
 		// ARP 보낸 뒤 대기
@@ -101,6 +137,7 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 			ip = iplist->GetItem(i)->IPAddress;
 			iplist->Unlock();
 			hip = ntohl(ip);
+
 			sendsock->SendICMPV4ECHORequest(ip);
 			size = iplist->GetSize();
 		}
@@ -154,27 +191,28 @@ void CNetworkIPScan::EndSend()
 
 // 캡처 결과 분석, icmp, arp만 분석
 // WPcapCaptureSocket.StartCapture의 콜백함수로 들어감
-void CNetworkIPScan::Analyze(const uint8_t *param, const uint8_t *packet)
+void CNetworkIPScan::Analyze(const uint8_t *param, const uint8_t *packet, const uint8_t *pkthdr)
 {
 	ETHHeader *ethh = (ETHHeader *)packet;
 	switch (ntohs(ethh->prototype))
 	{
 	case ETHTYPE::ARP:
-		ARPAnalyze(param, const_cast<uint8_t *>(packet));
+		ARPAnalyze(param, const_cast<uint8_t *>(packet), pkthdr);
 		break;
 	case ETHTYPE::IPV4:
-		IPAnalyze(param, const_cast<uint8_t *>(packet));
+		IPAnalyze(param, const_cast<uint8_t *>(packet), pkthdr);
 		break;
 	default:
 		break;
 	}
 }
-void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
+void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet, const uint8_t *pkthdr)
 {
 	// 파라미터 변환
 	struct ThreadParams *capparam = (struct ThreadParams *)param;
 	CIPStatusList *ipstatlist = (CIPStatusList *)capparam->list;
 	CWPcapCaptureSocket *capsock = (CWPcapCaptureSocket *)capparam->socket;
+	struct pcap_pkthdr *packetheader = (struct pcap_pkthdr*) pkthdr;
 
 	uint32_t myip = capsock->GetCurrentSelectNICInfo()->NICIPAddress;
 	ARPPacket *arpp = (ARPPacket *)(packet + ETHERNETHEADER_LENGTH);
@@ -182,42 +220,76 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 	int index;
 	uint8_t mac[MACADDRESS_LENGTH] = { 0, };
 
-	// 범위 내의 ip인지 확인
+	// 스캔 범위 내의 ip인지 확인한다.
+	IPStatusInfo *ipstat;
 	memcpy(&senderip, arpp->spaddr, IPV4ADDRESS_LENGTH);
 	index = ipstatlist->IsInItem(senderip);
 	if (index == -1)
 		return;
+	else
+	{
+		// IPStatusInfo 리스트에서 아이템 가져오기
+		ipstat = ipstatlist->GetItem(index);
+	}
+		
 
-	// 패킷 분석
+	// ARP 패킷 분석
 	switch (ntohs(arpp->opcode))
 	{
 	case ARPOPCODE::ARPREQUEST:
 		if (senderip == myip)
+		{
 			break;
+		}
 		break;
 	case ARPOPCODE::ARPREPLY:
 		memcpy(&dstip, arpp->dpaddr, IPV4ADDRESS_LENGTH);
 		if (dstip == myip)
 		{
 			memcpy(mac, arpp->shaddr, MACADDRESS_LENGTH);
-			index = ipstatlist->IsInItem(senderip);
-			IPStatusInfo *item = ipstatlist->GetItem(index);
-			switch (item->IPStatus)
+			ipstat = ipstatlist->GetItem(index);
+			switch (ipstat->IPStatus)
 			{
 			case IPSTATUS::NOTUSING:
 			case IPSTATUS::ONLYPING:
-				ipstatlist->UpdateItemARPInfo(index, mac, USING);
+				memcpy(ipstat->MACAddress, mac, MACADDRESS_LENGTH);
+				ipstat->IPStatus = USING;
+				ipstat->LastPingRecvTime = packetheader->ts;				
 				break;
 			case IPSTATUS::USING:
 			case IPSTATUS::USING_GATEWAY:
+				if (strncmp((char*)ipstat->MACAddress, (char*)mac, 6) == 0)
+					break;
+				else
+				{
+					ipstat->DuplicationMACCount++;
+					ipstat->DuplicationMAC = new MACAddr[ipstat->DuplicationMACCount];
+					memcpy(ipstat->DuplicationMAC, mac, MACADDRESS_LENGTH);
+					ipstat->IPStatus = IPDUPLICATION;
+				}
+				break;
 			case IPSTATUS::IPDUPLICATION:
-				if (strncmp((char*)item->MACAddress, (char*)mac, 6) == 0)
+				if (strncmp((char*)ipstat->MACAddress, (char*)mac, 6) == 0)
 					break;
 				// 맥 주소가 다를경우 IP 충돌 표시를 나타내고 MAC 목록을 추가한다.
 				else
 				{
-					ipstatlist->UpdateItemIPStat(index, IPDUPLICATION);
-					ipstatlist->InsertItem(index, senderip, mac, IPDUPLICATION, FALSE);
+					for (int i = 0; i < ipstat->DuplicationMACCount; i++)
+					{
+						if (strncmp((char*)ipstat->DuplicationMAC[i], (char*)mac, 6) == 0)
+							continue;
+						else
+						{
+							ipstat->DuplicationMACCount++;
+							MACAddr *temp = new MACAddr[ipstat->DuplicationMACCount];
+							memcpy(temp, mac, sizeof(MACAddr));
+							memcpy(temp + sizeof(MACAddr), ipstat->DuplicationMAC, sizeof(MACAddr) * (ipstat->DuplicationMACCount - 1));
+							delete(ipstat->DuplicationMAC);
+							ipstat->DuplicationMAC = temp;
+							break;
+						}
+					}
+					break;
 				}
 				break;
 			default:
@@ -229,12 +301,14 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet)
 		break;
 	}
 }
-void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
+void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet, const uint8_t *pkthdr)
 {
 	// 파라미터 변환
 	struct ThreadParams *capparam = (struct ThreadParams *)param;
 	CIPStatusList *ipstatlist = (CIPStatusList *)capparam->list;
 	CWPcapCaptureSocket *capsock = (CWPcapCaptureSocket *)capparam->socket;
+	// pkthdr 카피
+	struct pcap_pkthdr *packetheader = (struct pcap_pkthdr*) pkthdr;
 
 	IPV4Header *iph = (IPV4Header *)(packet + ETHERNETHEADER_LENGTH);
 	uint32_t ip;
@@ -257,14 +331,24 @@ void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet)
 		{
 			case IPV4TYPE::ICMP:
 			{
-				IPSTATUS status = ipstatlist->GetItem(index)->IPStatus;
+				IPStatusInfo *ipinfo = ipstatlist->GetItem(index);
+				IPSTATUS status = ipinfo->IPStatus;
 
 				// NOTUSING 상태일 경우 ONLYPING으로 바꾸고
 				if (status == IPSTATUS::NOTUSING)
-					ipstatlist->UpdateItemPingStat(index, IPSTATUS::ONLYPING, TRUE);
+				{
+					ipinfo->IPStatus = IPSTATUS::ONLYPING;
+					ipinfo->PingReply = TRUE;
+					ipinfo->LastPingRecvTime = packetheader->ts;
+				}
+					
 				// 아닐경우 status를 그대로 가져간다.
 				else
-					ipstatlist->UpdateItemPingStat(index, status, TRUE);
+				{
+					ipinfo->PingReply = TRUE;
+					ipinfo->LastPingRecvTime = packetheader->ts;
+				}
+					
 				break;
 			}
 			default:
@@ -344,7 +428,6 @@ void CNetworkIPScan::IPStatusListInsertItem(uint32_t hbeginip, uint32_t hendip)
 			ipinfo.PingReply = false;
 
 			m_IPStatInfoList.InsertItem(index, &ipinfo);
-			//m_IPStatInfoList.InsertItem(index, htonl(hbeginip), mac, IPSTATUS::NOTUSING, false);
 		}
 	}
 }

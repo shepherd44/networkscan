@@ -8,7 +8,7 @@
 
 #define CAPTURESOCK_FILTERSTRING 
 
-typedef void(*capture_handler)(const u_char *, const u_char *);
+typedef void(*capture_handler)(const u_char *, const u_char *, const u_char *);
 
 struct PCapLoopParam
 {

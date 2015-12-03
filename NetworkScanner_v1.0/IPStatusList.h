@@ -3,6 +3,9 @@
 #include "linkedlist.h"
 #include <stdint.h>
 
+
+
+
 // IP 상태 체크
 enum IPSTATUS
 {
@@ -36,12 +39,10 @@ typedef struct IPStatusInfo
 	struct timeval LastPingRecvTime;
 	bool		PingReply;
 
-	// DuplicateIP List
-	// uint32_t *DuplicationIP;
-	//MACAddr *DuplicationMAC;
-	//int DuplicationMACNum;
+	// Duplicate MAC List
+	MACAddr *DuplicationMAC;
+	int DuplicationMACCount;
 	
-	// uint8_t dupmacaddr;
 	ListHead	list;	// list head
 }IPStatusInfo;
 
@@ -59,15 +60,13 @@ class CIPStatusList
 	//  외부적으로 item을 얻어야할 경우 GetItem을 사용하도록 변경
 	IPStatusInfo* At(int index);
 public:
-	void AddItem(uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
+	// Update Log: ipinfo를 직접 삽입하도록 수정
+	// (2015.12.3)
+	//void AddItem(uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
+	//void InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
 	void AddItem(IPStatusInfo *ipinfo);
-	void InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
 	void InsertItem(int index, IPStatusInfo *ipinfo);
-	// Update 함수
-	void UpdateItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
-	void UpdateItemARPInfo(int index, uint8_t *mac, IPSTATUS ipstat);
-	void UpdateItemIPStat(int index, IPSTATUS ipstat);
-	void UpdateItemPingStat(int index, IPSTATUS ipstat, bool pingreply);
+	
 	// ip가 내부에 있을경우 -1 반환
 	int SearchItemIndex(uint32_t ip);
 	int IsInItem(uint32_t ip);
@@ -75,7 +74,7 @@ public:
 	void RemoveItem(int index);
 
 	// 스캔 재시작을 위한 초기화
-	// IP 목록
+	// IP, ListHead를 제외하고 전부 0으로 셋팅
 	void ListInitForScan();
 	// 리스트 비우기
 	void ClearList();
@@ -91,4 +90,14 @@ public:
 public:
 	CIPStatusList();
 	~CIPStatusList();
+
+
+	// Update 함수
+	// Update Log: Update Item의 인수가 너무 많이 늘어나고 있기 때문에
+	// (2015.12.3) GetItem으로 Item을 받아와서 처리하도록 변경
+	//             Data 오염 주의
+	//void UpdateItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply);
+	//void UpdateItemARPInfo(int index, uint8_t *mac, IPSTATUS ipstat);
+	//void UpdateItemIPStat(int index, IPSTATUS ipstat);
+	//void UpdateItemPingStat(int index, IPSTATUS ipstat, bool pingreply);
 };

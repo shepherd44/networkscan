@@ -9,8 +9,15 @@
 	#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 
-// 캡처 스레드 파라미터
+// pcpa_pkthdr copy
+// pcap ver:4.1.3
+//struct pcap_pkthdr {
+//	struct timeval ts;	/* time stamp */
+//	bpf_u_int32 caplen;	/* length of portion present */
+//	bpf_u_int32 len;	/* length this packet (off wire) */
+//};
 
+// 캡처 스레드 파라미터
 // 파라미터 3개 구조체
 struct ThreadParams
 {
@@ -57,9 +64,9 @@ public:
 	void EndCapture();		
 	// 캡처 결과 분석, icmp, arp만 분석
 	// WPcapCaptureSocket.StartCapture의 콜백함수로 들어감
-	static void Analyze(const uint8_t *param, const uint8_t *packet);
-	static void IPAnalyze(const uint8_t *param, const uint8_t *packet);		// IP 분석
-	static void ARPAnalyze(const uint8_t *param, const uint8_t *packet);	// ARP 분석
+	static void Analyze(const uint8_t *param, const uint8_t *packet, const uint8_t *pkthdr);
+	static void IPAnalyze(const uint8_t *param, const uint8_t *packet, const uint8_t *pkthdr);		// IP 분석
+	static void ARPAnalyze(const uint8_t *param, const uint8_t *packet, const uint8_t *pkthdr);	// ARP 분석
 
 	// 패킷 전송 스레드 함수
 	static UINT AFX_CDECL SendThreadFunc(LPVOID lpParam);

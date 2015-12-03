@@ -16,27 +16,6 @@ CIPStatusList::~CIPStatusList()
 	CloseHandle(m_ListMutex);
 }
 
-void CIPStatusList::AddItem(uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply)
-{
-	if (!Lock(INFINITE))
-		return;
-	int len = 0;
-	IPStatusInfo *temp = new IPStatusInfo;
-	memset(temp, 0, sizeof(IPStatusInfo));
-	// 리스트에 삽입
-	ListAddTail(&temp->list, &m_ListHead);
-	// 리스트 사이즈 증가
-	m_ListSize++;
-
-	// 값 셋팅
-	temp->IPAddress = ip;
-	memcpy(temp->MACAddress, mac, 6);
-	temp->IPStatus = ipstat;
-	temp->PingReply = pingreply;
-
-	Unlock();
-}
-
 void CIPStatusList::AddItem(IPStatusInfo *ipinfo)
 {
 	if (!Lock(INFINITE))
@@ -75,81 +54,6 @@ void CIPStatusList::InsertItem(int index, IPStatusInfo *ipinfo)
 	Unlock();
 }
 
-void CIPStatusList::InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply)
-{
-	if (!Lock(INFINITE))
-		return;
-	PListHead lh;
-	if (index > m_ListSize)
-		return ;
-	else
-	{
-		lh = &m_ListHead;
-		for (int i = 0; i < index; i++)
-			lh = lh->next;
-	}
-	
-	IPStatusInfo *temp = new IPStatusInfo;
-	memset(temp, 0, sizeof(IPStatusInfo));
-	// 리스트에 삽입
-	ListAdd(&temp->list, lh);
-	// 리스트 사이즈 증가
-	m_ListSize++;
-
-	// 값 셋팅
-	temp->IPAddress = ip;
-	memcpy(temp->MACAddress, mac, MACADDRESS_LENGTH);
-	temp->IPStatus = ipstat;
-	temp->PingReply = pingreply;
-
-	Unlock();
-}
-
-void CIPStatusList::UpdateItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply)
-{
-	if (!Lock(INFINITE))
-		return;
-
-	IPStatusInfo *temp = At(index);
-	temp->IPAddress = ip;
-	memcpy(temp->MACAddress, mac, 6);
-	temp->IPStatus = ipstat;
-	temp->PingReply = pingreply;
-
-	Unlock();
-}
-void CIPStatusList::UpdateItemARPInfo(int index, uint8_t *mac, IPSTATUS ipstat)
-{
-	if (!Lock(INFINITE))
-		return;
-
-	IPStatusInfo *temp = At(index);
-	memcpy(temp->MACAddress, mac, 6);
-	temp->IPStatus = ipstat;
-
-	Unlock();
-}
-
-void CIPStatusList::UpdateItemIPStat(int index, IPSTATUS ipstat)
-{
-	if (!Lock(INFINITE))
-		return;
-
-	IPStatusInfo *temp = At(index);
-	temp->IPStatus = ipstat;
-
-	Unlock();
-}
-void CIPStatusList::UpdateItemPingStat(int index, IPSTATUS ipstat, bool pingreply)
-{
-	if (!Lock(INFINITE))
-		return;
-
-	IPStatusInfo *temp = At(index);
-	temp->IPStatus = ipstat;
-	temp->PingReply = pingreply;
-	Unlock();
-}
 int CIPStatusList::SearchItemIndex(uint32_t ip)
 {
 	int ret = 0;
@@ -188,6 +92,8 @@ void CIPStatusList::RemoveItem(PListHead ph)
 		return;
 	ListDelete(ph);
 	IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
+	if (item->DuplicationMAC != NULL)
+		delete(item->DuplicationMAC);
 	delete(item);
 	m_ListSize--;
 	Unlock();
@@ -204,6 +110,8 @@ void CIPStatusList::RemoveItem(int index)
 
 	ListDelete(ph);
 	IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
+	if (item->DuplicationMAC != NULL)
+		delete(item->DuplicationMAC);
 	delete(item);
 	m_ListSize--;
 	
@@ -219,8 +127,34 @@ void CIPStatusList::ClearList()
 	{
 		ListDelete(ph);
 		IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
+		if (item->DuplicationMAC != NULL)
+			delete(item->DuplicationMAC);
 		delete(item);
 		m_ListSize--;
+	}
+	Unlock();
+}
+
+void CIPStatusList::ListInitForScan()
+{
+	if (!Lock(INFINITE))
+		return;
+	PListHead ph = m_ListHead.next;
+	for (; ph != &m_ListHead; ph = ph->next)
+	{
+		IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
+		// 해당 item 초기화
+		// 초기화 제외 목록: ipaddredd, dopingsend, doarpsend, list
+		memset(item->MACAddress, 0, sizeof(timeval));
+		item->IPStatus = IPSTATUS::NOTUSING;
+		memset(&item->LastARPRecvTime, 0, sizeof(timeval));
+		memset(&item->LastARPSendTime, 0, sizeof(timeval));
+		memset(&item->LastPingRecvTime, 0, sizeof(timeval));
+		memset(&item->LastPingSendTime, 0, sizeof(timeval));
+		
+		if (item->DuplicationMAC != NULL)
+			delete(item->DuplicationMAC);
+		item->DuplicationMACCount = 0;
 	}
 	Unlock();
 }
@@ -256,3 +190,99 @@ BOOL CIPStatusList::Lock(DWORD timeout)
 		return FALSE;
 	}
 }
+
+// Update Log: 이제 사용하지 않게되어 주석 처리해둠
+// (2015.12.3)
+//void CIPStatusList::AddItem(uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply)
+//{
+//	if (!Lock(INFINITE))
+//		return;
+//	int len = 0;
+//	IPStatusInfo *temp = new IPStatusInfo;
+//	memset(temp, 0, sizeof(IPStatusInfo));
+//	// 리스트에 삽입
+//	ListAddTail(&temp->list, &m_ListHead);
+//	// 리스트 사이즈 증가
+//	m_ListSize++;
+//
+//	// 값 셋팅
+//	temp->IPAddress = ip;
+//	memcpy(temp->MACAddress, mac, 6);
+//	temp->IPStatus = ipstat;
+//	temp->PingReply = pingreply;
+//
+//	Unlock();
+//}
+//void CIPStatusList::InsertItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply)
+//{
+//	if (!Lock(INFINITE))
+//		return;
+//	PListHead lh;
+//	if (index > m_ListSize)
+//		return ;
+//	else
+//	{
+//		lh = &m_ListHead;
+//		for (int i = 0; i < index; i++)
+//			lh = lh->next;
+//	}
+//	
+//	IPStatusInfo *temp = new IPStatusInfo;
+//	memset(temp, 0, sizeof(IPStatusInfo));
+//	// 리스트에 삽입
+//	ListAdd(&temp->list, lh);
+//	// 리스트 사이즈 증가
+//	m_ListSize++;
+//
+//	// 값 셋팅
+//	temp->IPAddress = ip;
+//	memcpy(temp->MACAddress, mac, MACADDRESS_LENGTH);
+//	temp->IPStatus = ipstat;
+//	temp->PingReply = pingreply;
+//
+//	Unlock();
+//}
+//void CIPStatusList::UpdateItem(int index, uint32_t ip, uint8_t *mac, IPSTATUS ipstat, bool pingreply)
+//{
+//	if (!Lock(INFINITE))
+//		return;
+//
+//	IPStatusInfo *temp = At(index);
+//	temp->IPAddress = ip;
+//	memcpy(temp->MACAddress, mac, 6);
+//	temp->IPStatus = ipstat;
+//	temp->PingReply = pingreply;
+//
+//	Unlock();
+//}
+//void CIPStatusList::UpdateItemARPInfo(int index, uint8_t *mac, IPSTATUS ipstat)
+//{
+//	if (!Lock(INFINITE))
+//		return;
+//
+//	IPStatusInfo *temp = At(index);
+//	memcpy(temp->MACAddress, mac, 6);
+//	temp->IPStatus = ipstat;
+//
+//	Unlock();
+//}
+//void CIPStatusList::UpdateItemIPStat(int index, IPSTATUS ipstat)
+//{
+//	if (!Lock(INFINITE))
+//		return;
+//
+//	IPStatusInfo *temp = At(index);
+//	temp->IPStatus = ipstat;
+//
+//	Unlock();
+//}
+//void CIPStatusList::UpdateItemPingStat(int index, IPSTATUS ipstat, bool pingreply)
+//{
+//	if (!Lock(INFINITE))
+//		return;
+//
+//	IPStatusInfo *temp = At(index);
+//	temp->IPStatus = ipstat;
+//	temp->PingReply = pingreply;
+//	Unlock();
+//}

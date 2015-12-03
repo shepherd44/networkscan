@@ -45,7 +45,7 @@ void CWPcapCaptureSocket::StartCapture(capture_handler callback, uint8_t *param,
 		packet = (u_char *)pcap_next(m_pCapHandler, &pkthdr);
 		// 패킷 처리 콜백 함수 실행
 		if (callback != NULL && packet != NULL)
-			callback(param, packet);
+			callback(param, packet, (u_char *)&pkthdr);
 	}
 	return;
 }

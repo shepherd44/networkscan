@@ -558,10 +558,10 @@ void CNetworkScannerDlg::ViewUpdate()
 		if (IsDlgButtonChecked(IDC_CHECK_HIDEDEADIP))
 		{
 			if (ipstat->IPStatus != IPSTATUS::NOTUSING)
-				m_ViewListBuffer.AddItem(ipstat->IPAddress, ipstat->MACAddress, ipstat->IPStatus, ipstat->PingReply);
+				m_ViewListBuffer.AddItem(ipstat);
 		}
 		else
-			m_ViewListBuffer.AddItem(ipstat->IPAddress, ipstat->MACAddress, ipstat->IPStatus, ipstat->PingReply);
+			m_ViewListBuffer.AddItem(ipstat);
 	}
 }
 

@@ -33,7 +33,8 @@
 
 #include <afxcontrolbars.h>     // MFC의 리본 및 컨트롤 막대 지원
 
-
+#include <time.h>
+#include <sys/timeb.h>
 #include "NetworkScanner.h"
 #include "NetworkScannerDlg.h"
 #include "socket.h"
