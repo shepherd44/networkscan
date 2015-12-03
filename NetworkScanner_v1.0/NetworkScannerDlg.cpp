@@ -282,7 +282,6 @@ void CNetworkScannerDlg::OnBnClickedBtnScanRemoveip()
 {
 	POSITION pos = m_ListCtrlScanResult.GetFirstSelectedItemPosition();
 	int selected;
-	IPStatusInfo *ipstat;
 	while (pos)
 	{
 		selected = m_ListCtrlScanResult.GetNextSelectedItem(pos);
@@ -372,11 +371,12 @@ void CNetworkScannerDlg::ListCtrlInit()
 {
 	LISTCTRL_COULMNSTRING__;	// static wchar_t *ListCtrlColumnString[] 선언
 	
-	ListView_SetExtendedListViewStyle(m_ListCtrlScanResult.m_hWnd, LVS_EX_DOUBLEBUFFER| LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES | LVS_EX_GRIDLINES);
-	
+//	ListView_SetExtendedListViewStyle(m_ListCtrlScanResult.m_hWnd, LVS_EX_DOUBLEBUFFER| LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES | LVS_EX_GRIDLINES);
+	ListView_SetExtendedListViewStyle(m_ListCtrlScanResult.m_hWnd, LVS_EX_DOUBLEBUFFER | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+
 	// 열 설정
 	int i = 0, size = sizeof(LISTCTRL_COULMNSTRING_) / sizeof(wchar_t*);
-	m_ListCtrlScanResult.InsertColumn(i, LISTCTRL_COULMNSTRING(i++), LVCFMT_LEFT, 0, -1);
+	//m_ListCtrlScanResult.InsertColumn(i, LISTCTRL_COULMNSTRING(i++), LVCFMT_LEFT, 0, -1);
 	m_ListCtrlScanResult.InsertColumn(i, LISTCTRL_COULMNSTRING(i++), LVCFMT_LEFT, LIST_COLUMN_NUMBER_LENGTH, -1);
 	for (; i < size; i++)
 		m_ListCtrlScanResult.InsertColumn(i, ListCtrlColumnString[i], LVCFMT_LEFT, LIST_COLUMN_LENGTH, -1);
@@ -423,33 +423,73 @@ void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *
 
 	int index = pItem->iItem;
 	ipstat = m_ViewListBuffer.GetItem(index);
+	
 	if (pItem->mask & LVIF_TEXT)
 	{
+		time_t local_tv_sec;
+		struct tm *ltime;
+		char timestr[16];
 		switch (pItem->iSubItem)
 		{
-		case 0:
-			break;
-		case 1:	// 인덱스
+		case 0:	// 인덱스
 			str.Format(_T("%d"), index + 1);
 			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);
 			break;
-		case 2:	// ip
+		case 1:	// ip
 			str.Format(_T("%d.%d.%d.%d"), (ipstat->IPAddress) & 0xff, (ipstat->IPAddress >> 8) & 0xff, (ipstat->IPAddress >> 16) & 0xff, (ipstat->IPAddress >> 24) & 0xff);
 			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);
 			break;
-		case 3:
+		case 2: // MAC 주소
+			if (m_ProgramState == SCANNIG_STATE::BEGIN)
+				break;
 			str.Format(_T("%02X:%02X:%02X:%02X:%02X:%02X"), ipstat->MACAddress[0], ipstat->MACAddress[1], ipstat->MACAddress[2],
 				ipstat->MACAddress[3], ipstat->MACAddress[4], ipstat->MACAddress[5]);
 			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);
 			break;
-		case 4:
+		case 3: // last ping send time
+			if (m_ProgramState == SCANNIG_STATE::BEGIN)
+				break;
+			if (ipstat->LastPingSendTime.tv_sec == 0)
+			{
+				break;
+			}
+			else
+			{
+				local_tv_sec = ipstat->LastPingSendTime.tv_sec;
+				ltime = localtime(&local_tv_sec);
+				strftime(timestr, sizeof timestr, "%H:%M:%S", ltime);
+			}
+			str.Format(_T("%dH %dM %dS"), ltime->tm_hour, ltime->tm_min, ltime->tm_sec);
+			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);
+			break;
+		case 4: // last ping recv time
+			if (m_ProgramState == SCANNIG_STATE::BEGIN)
+				break;
+			if (ipstat->LastPingRecvTime.tv_sec == 0)
+			{
+				break;
+			}
+			else
+			{
+				local_tv_sec = ipstat->LastPingRecvTime.tv_sec;
+				ltime = localtime(&local_tv_sec);
+				strftime(timestr, sizeof timestr, "%H:%M:%S", ltime);
+			}
+			str.Format(_T("%dH %dM %dS"), ltime->tm_hour, ltime->tm_min, ltime->tm_sec);
+			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);
+			break;
+		case 5: 
+			if (m_ProgramState == SCANNIG_STATE::BEGIN)
+				break;
 			str.Format(ipstatstr[ipstat->IPStatus]);
 			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);
 			break;
-		case 5:
-			str.Format(_T("%s"), ipstat->PingReply ? "O" : "X");
-			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);
-			break;
+		//case 6: ping 응답
+		//	if (m_ProgramState == SCANNIG_STATE::BEGIN)
+		//		break;
+		//	str.Format(_T("%s"), ipstat->PingReply ? "O" : "X");
+		//	lstrcpyn(pItem->pszText, str, pItem->cchTextMax);
+		//	break;
 		default:
 			break;
 		}

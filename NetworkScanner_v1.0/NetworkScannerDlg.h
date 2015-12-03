@@ -22,12 +22,12 @@
 // 리스트 컨트롤 컬럼 스트링 선언 매크로
 
 #define LISTCTRL_COULMNSTRING__	static wchar_t *ListCtrlColumnString[] = {	\
-														_T("V"),			\
 														_T("No"),			\
 														_T("IP Address"),	\
 														_T("MAC Address"),	\
+														_T("Ping Send Time"),	\
+														_T("Ping Recv Time"),	\
 														_T("IP Status"),	\
-														_T("PING Reply"),	\
 													}
 #define LISTCTRL_COULMNSTRING_			ListCtrlColumnString
 #define LISTCTRL_COULMNSTRING(index)	ListCtrlColumnString[index]

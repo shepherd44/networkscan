@@ -95,6 +95,7 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 	uint32_t hendnetwork = hstartnetwork + ~hnetmask;
 	uint32_t ip, hip;
 	
+	timeval now;
 	while (!*isdye)
 	{
 		// 프로그램 상태바 업데이트
@@ -112,10 +113,9 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 			hip = ntohl(ip);
 			if (hip >= hstartnetwork && hip <= hendnetwork)
 			{
-				timeval now;
 				gettimeofday(&now, NULL);
-				ipstat->LastARPSendTime = now;
 				sendsock->SendARPRequest(ip);
+				ipstat->LastARPSendTime = now;
 			}
 		}
 
@@ -134,11 +134,14 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 			if (*isdye)
 				return 0;
 			iplist->Lock(INFINITE);
-			ip = iplist->GetItem(i)->IPAddress;
+			ipstat = iplist->GetItem(i);
+			ip = ipstat->IPAddress;
 			iplist->Unlock();
 			hip = ntohl(ip);
 
+			gettimeofday(&now, NULL);
 			sendsock->SendICMPV4ECHORequest(ip);
+			ipstat->LastPingSendTime = now;
 			size = iplist->GetSize();
 		}
 
