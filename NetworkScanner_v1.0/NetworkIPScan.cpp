@@ -319,44 +319,45 @@ void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet, cons
 	uint8_t mac[MACADDRESS_LENGTH] = { 0, };
 
 	memcpy(&ip, iph->srcaddr, IPV4ADDRESS_LENGTH);
-	// 전송자가 나일 경우 리턴
+	// 패킷 전송자가 나일 경우 리턴
 	if (ip == capsock->GetCurrentSelectNICInfo()->NICIPAddress)
+	{
 		return;
+	}
+	
 
-	// 패킷 전송ip가 결과 리스트 안에 있는지 확인
+	// 패킷 전송자가 
 	index = ipstatlist->IsInItem(ip);
 	if (index == -1)
 		return;
-	// 있을 경우 IPStatus 상태에 따라 처리
-	else
-	{
-		switch (iph->protoid)
-		{
-			case IPV4TYPE::ICMP:
-			{
-				IPStatusInfo *ipinfo = ipstatlist->GetItem(index);
-				IPSTATUS status = ipinfo->IPStatus;
 
-				// NOTUSING 상태일 경우 ONLYPING으로 바꾸고
-				if (status == IPSTATUS::NOTUSING)
-				{
-					ipinfo->IPStatus = IPSTATUS::ONLYPING;
-					ipinfo->PingReply = TRUE;
-					ipinfo->LastPingRecvTime = packetheader->ts;
-				}
-					
-				// 아닐경우 status를 그대로 가져간다.
-				else
-				{
-					ipinfo->PingReply = TRUE;
-					ipinfo->LastPingRecvTime = packetheader->ts;
-				}
-					
-				break;
+	// 있을 경우 IPStatus 상태에 따라 처리
+	switch (iph->protoid)
+	{
+		case IPV4TYPE::ICMP:
+		{
+			IPStatusInfo *ipinfo = ipstatlist->GetItem(index);
+			IPSTATUS status = ipinfo->IPStatus;
+
+			// NOTUSING 상태일 경우 ONLYPING으로 바꾸고
+			if (status == IPSTATUS::NOTUSING)
+			{
+				ipinfo->IPStatus = IPSTATUS::ONLYPING;
+				ipinfo->PingReply = TRUE;
+				ipinfo->LastPingRecvTime = packetheader->ts;
 			}
-			default:
-				break;
+					
+			// 아닐경우 status를 그대로 가져간다.
+			else
+			{
+				ipinfo->PingReply = TRUE;
+				ipinfo->LastPingRecvTime = packetheader->ts;
+			}
+					
+			break;
 		}
+		default:
+			break;
 	}
 }
 

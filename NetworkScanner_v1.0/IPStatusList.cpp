@@ -22,6 +22,11 @@ void CIPStatusList::AddItem(IPStatusInfo *ipinfo)
 		return;
 	IPStatusInfo *temp = new IPStatusInfo;
 	memcpy(temp, ipinfo, sizeof(IPStatusInfo));
+	if (ipinfo->DuplicationMACCount > 0)
+	{
+		temp->DuplicationMAC = new MACAddr[ipinfo->DuplicationMACCount];
+		memcpy(temp->DuplicationMAC, ipinfo->DuplicationMAC, sizeof(MACAddr) * ipinfo->DuplicationMACCount);
+	}
 	// 리스트에 삽입
 	ListAddTail(&temp->list, &m_ListHead);
 	// 리스트 사이즈 증가
@@ -46,6 +51,11 @@ void CIPStatusList::InsertItem(int index, IPStatusInfo *ipinfo)
 
 	IPStatusInfo *temp = new IPStatusInfo;
 	memcpy(temp, ipinfo, sizeof(IPStatusInfo));
+	if (ipinfo->DuplicationMACCount > 0)
+	{
+		temp->DuplicationMAC = new MACAddr[ipinfo->DuplicationMACCount];
+		memcpy(temp->DuplicationMAC, ipinfo->DuplicationMAC, sizeof(MACAddr) * ipinfo->DuplicationMACCount);
+	}
 	// 리스트에 삽입
 	ListAdd(&temp->list, lh);
 	// 리스트 사이즈 증가
