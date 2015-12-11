@@ -33,6 +33,7 @@ protected:
 
 CAboutDlg::CAboutDlg() : CDialogEx(CAboutDlg::IDD)
 {
+
 }
 
 void CAboutDlg::DoDataExchange(CDataExchange* pDX)
@@ -443,7 +444,8 @@ void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *
 		case 2: // MAC аж╪р
 			if (m_ProgramState == SCANNIG_STATE::BEGIN)
 				break;
-			if (strncmp((char*)ipstat->MACAddress, (char*)mactmp , MACADDRESS_LENGTH));
+			if (strncmp((char*)ipstat->MACAddress, (char*)mactmp, MACADDRESS_LENGTH) == 0)
+				break;
 			str.Format(_T("%02X:%02X:%02X:%02X:%02X:%02X"), ipstat->MACAddress[0], ipstat->MACAddress[1], ipstat->MACAddress[2],
 				ipstat->MACAddress[3], ipstat->MACAddress[4], ipstat->MACAddress[5]);
 			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);

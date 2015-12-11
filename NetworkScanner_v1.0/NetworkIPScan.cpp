@@ -287,7 +287,7 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet, con
 							MACAddr *temp = new MACAddr[ipstat->DuplicationMACCount];
 							memcpy(temp, mac, sizeof(MACAddr));
 							memcpy(temp + sizeof(MACAddr), ipstat->DuplicationMAC, sizeof(MACAddr) * (ipstat->DuplicationMACCount - 1));
-							delete(ipstat->DuplicationMAC);
+							delete []ipstat->DuplicationMAC;
 							ipstat->DuplicationMAC = temp;
 							break;
 						}
@@ -409,11 +409,7 @@ void CNetworkIPScan::EndCapture()
 
 void CNetworkIPScan::IPStatusListInsertItem(uint32_t hbeginip, uint32_t hendip)
 {
-	IPStatusInfo *item;
 	int size = m_IPStatInfoList.GetSize();
-	int index;
-	int binary;
-	int nip;
 	uint8_t mac[MACADDRESS_LENGTH] = { 0, };
 	for (; hbeginip <= hendip; hbeginip++)
 	{
