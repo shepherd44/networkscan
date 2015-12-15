@@ -29,6 +29,7 @@ void CNICInfoDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CNICInfoDlg, CDialogEx)
 	ON_BN_CLICKED(ID_BTN_SELECT, &CNICInfoDlg::OnBnClickedBtnSelect)
 	ON_BN_CLICKED(IDCANCEL, &CNICInfoDlg::OnBnClickedCancel)
+	ON_NOTIFY(NM_DBLCLK, IDC_LIST_NICInfoList, &CNICInfoDlg::OnNMDblclkListNicinfolist)
 END_MESSAGE_MAP()
 
 
@@ -149,4 +150,20 @@ void CNICInfoDlg::OnBnClickedCancel()
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	// CDialogEx::OnCancel();
 	this->EndModalLoop(-1);
+}
+
+
+void CNICInfoDlg::OnNMDblclkListNicinfolist(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	int selected = -1;
+	POSITION pos = m_ListCtrlNICInfoList.GetFirstSelectedItemPosition();
+	while (pos)
+	{
+		selected = m_ListCtrlNICInfoList.GetNextSelectedItem(pos);
+		break;
+	}
+	this->EndModalLoop(selected);
+	*pResult = 0;
 }

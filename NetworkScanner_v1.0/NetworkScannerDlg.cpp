@@ -320,18 +320,12 @@ void CNetworkScannerDlg::ComboBoxInit()
 	CNICInfoList *nicinfolist = m_NetworkIPScan.GetNicInfoList();
 	NICInfo *nicinfo;
 	int size = nicinfolist->GetSize();
-	char des[28];
+	char des[256];
 	for (int i = 0; i < size; i++)
 	{
 		nicinfo = nicinfolist->At(i);
-		memset(des, '\0', 28);
-		if (strlen(nicinfo->Description) > 25)
-		{
-			memcpy(des, nicinfo->Description, 24);
-			memcpy(des + 24, "...", 4);
-		}
-		else
-			memcpy(des, nicinfo->Description, strlen(nicinfo->Description));
+		memset(des, '\0', 256);
+		memcpy(des, nicinfo->Description, strlen(nicinfo->Description));
 		m_ComboCtrlNICInfo.AddString(CString(des));
 	}
 	
@@ -417,7 +411,7 @@ void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *
 		TEXT("IP DUPLICATION"),
 		TEXT("PING REPLY ONLY")
 	};
-	static uint8_t mactmp[6] = { 0 };
+	static uint8_t mactmp[6] = { 0, };
 
 	CString str;
 	IPStatusInfo *ipstat;
@@ -444,8 +438,8 @@ void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *
 		case 2: // MAC аж╪р
 			if (m_ProgramState == SCANNIG_STATE::BEGIN)
 				break;
-			if (strncmp((char*)ipstat->MACAddress, (char*)mactmp, MACADDRESS_LENGTH) == 0)
-				break;
+			//if (strncmp((char*)ipstat->MACAddress, (char*)mactmp, MACADDRESS_LENGTH) == 0)
+			//	break;
 			str.Format(_T("%02X:%02X:%02X:%02X:%02X:%02X"), ipstat->MACAddress[0], ipstat->MACAddress[1], ipstat->MACAddress[2],
 				ipstat->MACAddress[3], ipstat->MACAddress[4], ipstat->MACAddress[5]);
 			lstrcpyn(pItem->pszText, str, pItem->cchTextMax);

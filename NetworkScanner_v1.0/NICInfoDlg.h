@@ -53,4 +53,5 @@ public:
 	
 	void InitializeAll();
 	
+	afx_msg void OnNMDblclkListNicinfolist(NMHDR *pNMHDR, LRESULT *pResult);
 };

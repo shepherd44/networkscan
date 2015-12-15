@@ -103,7 +103,7 @@ void CIPStatusList::RemoveItem(PListHead ph)
 	ListDelete(ph);
 	IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
 	if (item->DuplicationMAC != NULL)
-		delete(item->DuplicationMAC);
+		delete []item->DuplicationMAC;
 	delete(item);
 	m_ListSize--;
 	Unlock();
@@ -121,7 +121,7 @@ void CIPStatusList::RemoveItem(int index)
 	ListDelete(ph);
 	IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
 	if (item->DuplicationMAC != NULL)
-		delete(item->DuplicationMAC);
+		delete []item->DuplicationMAC;
 	delete(item);
 	m_ListSize--;
 	
@@ -138,7 +138,7 @@ void CIPStatusList::ClearList()
 		ListDelete(ph);
 		IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
 		if (item->DuplicationMAC != NULL)
-			delete(item->DuplicationMAC);
+			delete []item->DuplicationMAC;
 		delete(item);
 		m_ListSize--;
 	}
@@ -163,7 +163,7 @@ void CIPStatusList::ListInitForScan()
 		memset(&item->LastPingSendTime, 0, sizeof(timeval));
 		
 		if (item->DuplicationMAC != NULL)
-			delete(item->DuplicationMAC);
+			delete []item->DuplicationMAC;
 		item->DuplicationMACCount = 0;
 	}
 	Unlock();

@@ -65,8 +65,9 @@ public:
 	// 캡처 결과 분석, icmp, arp만 분석
 	// WPcapCaptureSocket.StartCapture의 콜백함수로 들어감
 	static void Analyze(const uint8_t *param, const uint8_t *packet, const uint8_t *pkthdr);
-	static void IPAnalyze(const uint8_t *param, const uint8_t *packet, const uint8_t *pkthdr);		// IP 분석
-	static void ARPAnalyze(const uint8_t *param, const uint8_t *packet, const uint8_t *pkthdr);	// ARP 분석
+	static void IPAnalyze(CIPStatusList *ipstatlist, CWPcapCaptureSocket *capsock, const uint8_t *packet, const uint8_t *pkthdr);		// IP 분석
+	static void ICMPAnalyze(CIPStatusList *ipstatlist, CWPcapCaptureSocket *capsock, const uint8_t *packet, const uint8_t *pkthdr);		// IP 분석
+	static void ARPAnalyze(CIPStatusList *ipstatlist, CWPcapCaptureSocket *capsock, const uint8_t *packet, const uint8_t *pkthdr);	// ARP 분석
 
 	// 패킷 전송 스레드 함수
 	static UINT AFX_CDECL SendThreadFunc(LPVOID lpParam);

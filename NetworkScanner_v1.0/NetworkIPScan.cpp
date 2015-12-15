@@ -96,6 +96,9 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 	uint32_t ip, hip;
 	
 	timeval now;
+
+	
+	
 	while (!*isdye)
 	{
 		// 프로그램 상태바 업데이트
@@ -196,25 +199,27 @@ void CNetworkIPScan::EndSend()
 // WPcapCaptureSocket.StartCapture의 콜백함수로 들어감
 void CNetworkIPScan::Analyze(const uint8_t *param, const uint8_t *packet, const uint8_t *pkthdr)
 {
+	// 파라미터 변환
+	struct ThreadParams *capparam = (struct ThreadParams *)param;
+	CIPStatusList *ipstatlist = (CIPStatusList *)capparam->list;
+	CWPcapCaptureSocket *capsock = (CWPcapCaptureSocket *)capparam->socket;
+	
 	ETHHeader *ethh = (ETHHeader *)packet;
 	switch (ntohs(ethh->prototype))
 	{
 	case ETHTYPE::ARP:
-		ARPAnalyze(param, const_cast<uint8_t *>(packet), pkthdr);
+		ARPAnalyze(ipstatlist, capsock, const_cast<uint8_t *>(packet), pkthdr);
 		break;
 	case ETHTYPE::IPV4:
-		IPAnalyze(param, const_cast<uint8_t *>(packet), pkthdr);
+		IPAnalyze(ipstatlist, capsock, const_cast<uint8_t *>(packet), pkthdr);
 		break;
 	default:
 		break;
 	}
 }
-void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet, const uint8_t *pkthdr)
+void CNetworkIPScan::ARPAnalyze(CIPStatusList *ipstatlist, CWPcapCaptureSocket *capsock, const uint8_t *packet, const uint8_t *pkthdr)
 {
 	// 파라미터 변환
-	struct ThreadParams *capparam = (struct ThreadParams *)param;
-	CIPStatusList *ipstatlist = (CIPStatusList *)capparam->list;
-	CWPcapCaptureSocket *capsock = (CWPcapCaptureSocket *)capparam->socket;
 	struct pcap_pkthdr *packetheader = (struct pcap_pkthdr*) pkthdr;
 
 	uint32_t myip = capsock->GetCurrentSelectNICInfo()->NICIPAddress;
@@ -234,7 +239,6 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet, con
 		// IPStatusInfo 리스트에서 아이템 가져오기
 		ipstat = ipstatlist->GetItem(index);
 	}
-		
 
 	// ARP 패킷 분석
 	switch (ntohs(arpp->opcode))
@@ -304,60 +308,71 @@ void CNetworkIPScan::ARPAnalyze(const uint8_t *param, const uint8_t *packet, con
 		break;
 	}
 }
-void CNetworkIPScan::IPAnalyze(const uint8_t *param, const uint8_t *packet, const uint8_t *pkthdr)
+void CNetworkIPScan::IPAnalyze(CIPStatusList *ipstatlist, CWPcapCaptureSocket *capsock, const uint8_t *packet, const uint8_t *pkthdr)
 {
-	// 파라미터 변환
-	struct ThreadParams *capparam = (struct ThreadParams *)param;
-	CIPStatusList *ipstatlist = (CIPStatusList *)capparam->list;
-	CWPcapCaptureSocket *capsock = (CWPcapCaptureSocket *)capparam->socket;
-	// pkthdr 카피
-	struct pcap_pkthdr *packetheader = (struct pcap_pkthdr*) pkthdr;
-
 	IPV4Header *iph = (IPV4Header *)(packet + ETHERNETHEADER_LENGTH);
-	uint32_t ip;
-	int index;
-	uint8_t mac[MACADDRESS_LENGTH] = { 0, };
-
-	memcpy(&ip, iph->srcaddr, IPV4ADDRESS_LENGTH);
-	// 패킷 전송자가 나일 경우 리턴
-	if (ip == capsock->GetCurrentSelectNICInfo()->NICIPAddress)
-	{
-		return;
-	}
-	
-
-	// 패킷 전송자가 
-	index = ipstatlist->IsInItem(ip);
-	if (index == -1)
-		return;
 
 	// 있을 경우 IPStatus 상태에 따라 처리
 	switch (iph->protoid)
 	{
+		// ICMP의 경우 다시 분류
 		case IPV4TYPE::ICMP:
 		{
-			IPStatusInfo *ipinfo = ipstatlist->GetItem(index);
-			IPSTATUS status = ipinfo->IPStatus;
-
-			// NOTUSING 상태일 경우 ONLYPING으로 바꾸고
-			if (status == IPSTATUS::NOTUSING)
-			{
-				ipinfo->IPStatus = IPSTATUS::ONLYPING;
-				ipinfo->PingReply = TRUE;
-				ipinfo->LastPingRecvTime = packetheader->ts;
-			}
-					
-			// 아닐경우 status를 그대로 가져간다.
-			else
-			{
-				ipinfo->PingReply = TRUE;
-				ipinfo->LastPingRecvTime = packetheader->ts;
-			}
-					
+			ICMPAnalyze(ipstatlist, capsock, packet, pkthdr);
 			break;
 		}
 		default:
 			break;
+	}
+}
+
+void CNetworkIPScan::ICMPAnalyze(CIPStatusList *ipstatlist, CWPcapCaptureSocket *capsock, const uint8_t *packet, const uint8_t *pkthdr)
+{
+	struct pcap_pkthdr *packetheader = (struct pcap_pkthdr*) pkthdr;
+	IPV4Header *iph = (IPV4Header *)(packet + ETHERNETHEADER_LENGTH);
+	ICMPV4Header * icmph = (ICMPV4Header *)(packet + ETHERNETHEADER_LENGTH + (iph->headerlen * 4));
+
+	uint32_t ip;
+	int index;
+	IPStatusInfo *ipinfo;
+	IPSTATUS status;
+
+	memcpy(&ip, iph->srcaddr, IPV4ADDRESS_LENGTH);
+	// 패킷 전송자 검사
+	// 내가 전송한 패킷 패킷의 경우 추가 검사 진행 안함
+	if (ip == capsock->GetCurrentSelectNICInfo()->NICIPAddress)
+	{
+		return;
+	}
+
+	index = ipstatlist->IsInItem(ip);
+	if (index == -1)
+		return;
+
+	switch (icmph->type)
+	{
+	case ICMPV4TYPE::ICMPV4_ECHO_REPLY:
+		ipinfo = ipstatlist->GetItem(index);
+		status = ipinfo->IPStatus;
+
+		// NOTUSING 상태일 경우 ONLYPING으로 바꾸고
+		if (status == IPSTATUS::NOTUSING)
+		{
+			ipinfo->IPStatus = IPSTATUS::ONLYPING;
+			ipinfo->PingReply = TRUE;
+			ipinfo->LastPingRecvTime = packetheader->ts;
+		}
+		// 아닐경우 status를 그대로 가져간다.
+		else
+		{
+			ipinfo->PingReply = TRUE;
+			ipinfo->LastPingRecvTime = packetheader->ts;
+		}
+		break;
+	case ICMPV4_ECHO_REQUEST:
+		break;
+	default:
+		break;
 	}
 }
 
