@@ -71,7 +71,11 @@ void CNetworkIPScan::Scan(u_long hbeginip, u_long hendip)
 	// ARP 패킷 송신
 	SendARP(m_BeginIP, m_EndIP);
 	// 패킷 캡쳐 기다리기
-	Sleep(1000);
+	for (int i = 0; i < 100; i++)
+	{
+		Sleep(10);
+	}
+	
 	// 캡쳐 끝내기
 	EndCapture();
 	// 분석

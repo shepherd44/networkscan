@@ -19,6 +19,7 @@ struct PCapLoopParam
 class CWPcapCaptureSocket : public CWPcapSocket
 {
 protected:
+	// update log: 패킷 필터관련 변수는 셋팅할 때만 필요하여 제외함
 	// winpcap 패킷 캡쳐 필터
 	//char *m_pPacketFilter;
 	// winpcap 프로그램된 필터

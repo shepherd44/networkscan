@@ -27,7 +27,7 @@ protected:
 	// 네트워크 디바이스 리스트
 	pcap_if_t *m_pAllNIC;
 	// winpcap 디바이스 연결 소켓
-	pcap_t *m_pCapHandler;	
+	pcap_t *m_pCapHandler;
 	int m_CurSel;
 	// NIC 정보 리스트 헤드
 	CNICInfoList m_NICInfoList;
