@@ -257,7 +257,7 @@ void CNetworkIPScan::ARPAnalyze(CIPStatusList *ipstatlist, CWPcapCaptureSocket *
 			case IPSTATUS::ONLYPING:
 				memcpy(ipstat->MACAddress, mac, MACADDRESS_LENGTH);
 				ipstat->IPStatus = USING;
-				ipstat->LastPingRecvTime = packetheader->ts;				
+				ipstat->LastARPRecvTime = packetheader->ts;				
 				break;
 			case IPSTATUS::USING:
 			case IPSTATUS::USING_GATEWAY:
