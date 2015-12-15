@@ -29,6 +29,7 @@ void CNetworkIPScan::Scan(int nicindex)
 	m_CaptureSock.OpenNetDevice(m_SendSock.GetCurrentSelectNICName());
 	// 캡처소켓 필터 셋팅
 	m_CaptureSock.SetPacketFilter("arp or icmp");
+	
 
 	// 내 PC IP 상태 처리
 	NICInfo *nicinfo = const_cast<NICInfo *>(m_SendSock.GetCurrentSelectNICInfo());
@@ -89,7 +90,7 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 
 	// 네트워크 주소 계산
 	NICInfo *nicinfo = const_cast<NICInfo *>(sendsock->GetCurrentSelectNICInfo());
-	// 호스트의 주소체계를 사용하면 h를 붙여둠
+	// 지역 변수 이름: 호스트의 endian을 따라가면 h를 붙여둠
 	uint32_t hnetmask = ntohl(nicinfo->Netmask);
 	uint32_t hstartnetwork = hnetmask & ntohl(nicinfo->NICIPAddress);
 	uint32_t hendnetwork = hstartnetwork + ~hnetmask;
@@ -172,13 +173,13 @@ void CNetworkIPScan::StartSend()
 		m_IsSendThreadDye = FALSE;
 		m_hSendThread = AfxBeginThread(SendThreadFunc, this, 0, 0, 0);
 	}
-	else
-	{
-		throw std::exception("send thread 생성 실패");
-#ifdef _DEBUG
-		AfxMessageBox(L"send thread 생성실패");
-#endif // _DEBUG
-	}
+//	else
+//	{
+//		throw std::exception("send thread 생성 실패");
+//#ifdef _DEBUG
+//		AfxMessageBox(L"send thread 생성실패");
+//#endif // _DEBUG
+//	}
 
 	if (m_hSendThread == NULL)
 		throw std::exception("스레드 시작 실패");
@@ -187,6 +188,7 @@ void CNetworkIPScan::EndSend()
 {
 	if (m_hSendThread != NULL)
 	{
+		Sleep(0);
 		m_IsSendThreadDye = TRUE;
 		WaitForSingleObject(m_hSendThread->m_hThread, INFINITE);
 		m_hSendThread = NULL;
@@ -402,8 +404,8 @@ void CNetworkIPScan::StartCapture()
 		// 캡쳐 스레드 시작
 		m_hCaptureThread = AfxBeginThread(CaptureThreadFunc, &capparam, 0, 0, 0);
 	}
-	else
-		throw std::exception("capture thread 생성 실패");
+	//else
+	//	throw std::exception("capture thread 생성 실패");
 
 	if (m_hCaptureThread == NULL)
 		throw std::exception("스레드 시작 실패");
@@ -415,6 +417,7 @@ void CNetworkIPScan::EndCapture()
 	// 종료 신호 보내기
 	if (m_hCaptureThread != NULL)
 	{
+		Sleep(0);
 		m_CaptureSock.EndCapture();
 		WaitForSingleObject(m_hCaptureThread->m_hThread, INFINITE);
 		m_hCaptureThread = NULL;
@@ -442,7 +445,9 @@ void CNetworkIPScan::IPStatusListInsertItem(uint32_t hbeginip, uint32_t hendip)
 			ipinfo.IPStatus = IPSTATUS::NOTUSING;
 			ipinfo.PingReply = false;
 
-			m_IPStatInfoList.InsertItem(index, &ipinfo);
+			/*m_IPStatInfoList.InsertItem(index, &ipinfo);*/
+			m_IPStatInfoList.AddItem(&ipinfo);
+
 		}
 	}
 }

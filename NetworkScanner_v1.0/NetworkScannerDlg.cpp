@@ -68,7 +68,6 @@ BEGIN_MESSAGE_MAP(CNetworkScannerDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(ID_BTN_SCAN, &CNetworkScannerDlg::OnBnClickedBtnScan)
 	ON_BN_CLICKED(ID_BTN_STOP_SEND, &CNetworkScannerDlg::OnBnClickedBtnStopSend)
-//	ON_BN_CLICKED(ID_BTN_STOP_RECV, &CNetworkScannerDlg::OnBnClickedBtnStopRecv)
 	ON_BN_CLICKED(ID_BTN_STOP_ALL, &CNetworkScannerDlg::OnBnClickedBtnStopAll)
 	ON_BN_CLICKED(ID_BTN_NICDETAIL, &CNetworkScannerDlg::OnBnClickedBtnNicdetail)
 	ON_BN_CLICKED(ID_BTN_SCAN_ADDIP, &CNetworkScannerDlg::OnBnClickedBtnScanAddip)
@@ -219,6 +218,8 @@ void CNetworkScannerDlg::OnBnClickedBtnStopAll()
 	btn->EnableWindow(TRUE);
 	// 콤보박스 클릭 제한
 	m_ComboCtrlNICInfo.EnableWindow(TRUE);
+	// 리스트 내용 초기화
+	m_NetworkIPScan.GetIpStatusList()->ListInitForScan();
 }
 void CNetworkScannerDlg::OnBnClickedBtnStopSend()
 {
@@ -235,21 +236,7 @@ void CNetworkScannerDlg::OnBnClickedBtnStopSend()
 	m_ProgramState = SCANNIG_STATE::STOP_SEND;
 	m_NetworkIPScan.EndSend();
 }
-//void CNetworkScannerDlg::OnBnClickedBtnStopRecv()
-//{
-//	if (m_ProgramState == SCANNIG_STATE::STOP_SEND)
-//	{
-//		m_ProgramState = SCANNIG_STATE::STOP_ALL;
-//		m_NetworkIPScan.EndSend();
-//		CButton *btn = (CButton *)GetDlgItem(ID_BTN_NICDETAIL);
-//		btn->EnableWindow(TRUE);
-//		m_ComboCtrlNICInfo.EnableWindow(TRUE);
-//	}
-//	else if (m_ProgramState == SCANNIG_STATE::STOP_ALL)
-//		return;
-//	m_ProgramState = SCANNIG_STATE::STOP_RECV;
-//	m_NetworkIPScan.EndCapture();
-//}
+
 void CNetworkScannerDlg::OnBnClickedBtnNicdetail()
 {
 	// 모달로 실행
@@ -535,6 +522,7 @@ void CNetworkScannerDlg::EndListUpdateThread()
 {
 	if (m_ListUpdateThread != NULL)
 	{
+		Sleep(0);
 		m_IsListUpdateThreadDye = true;
 		WaitForSingleObject(m_ListUpdateThread, INFINITE);
 		//Sleep(100);
@@ -609,3 +597,4 @@ void CNetworkScannerDlg::OnBnClickedCheckHidedeadip()
 	ViewUpdate();
 	m_ListCtrlScanResult.SetItemCount(m_ViewListBuffer.GetSize());
 }
+
