@@ -173,13 +173,7 @@ void CNetworkIPScan::StartSend()
 		m_IsSendThreadDye = FALSE;
 		m_hSendThread = AfxBeginThread(SendThreadFunc, this, 0, 0, 0);
 	}
-//	else
-//	{
-//		throw std::exception("send thread 생성 실패");
-//#ifdef _DEBUG
-//		AfxMessageBox(L"send thread 생성실패");
-//#endif // _DEBUG
-//	}
+
 
 	if (m_hSendThread == NULL)
 		throw std::exception("스레드 시작 실패");
@@ -404,8 +398,6 @@ void CNetworkIPScan::StartCapture()
 		// 캡쳐 스레드 시작
 		m_hCaptureThread = AfxBeginThread(CaptureThreadFunc, &capparam, 0, 0, 0);
 	}
-	//else
-	//	throw std::exception("capture thread 생성 실패");
 
 	if (m_hCaptureThread == NULL)
 		throw std::exception("스레드 시작 실패");

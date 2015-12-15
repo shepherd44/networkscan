@@ -289,7 +289,7 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 			memcpy(dstmac, pMib->table[i].bPhysAddr, pMib->table[i].dwPhysAddrLen);
 	SetETHHeader(packet, dstmac, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4));
 	free(pMib);
-	
+	//=======================================================
 
 	// 패킷 전송
 	int ret = SendPacket(packet, packetlen);
