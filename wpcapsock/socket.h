@@ -14,7 +14,6 @@
 #include "inetproto.h"
 #include "NICInfoList.h"
 
-//#pragma comment(lib, "wpcap.lib")
 #pragma comment(lib, "iphlpapi.lib")	// 맥 어드레스 얻기 위해 사용
 #pragma comment(lib, "ws2_32.lib")		// iphlpapi 사용
 

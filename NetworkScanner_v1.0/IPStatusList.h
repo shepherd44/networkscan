@@ -3,9 +3,6 @@
 #include "linkedlist.h"
 #include <stdint.h>
 
-
-
-
 // IP 상태 체크
 enum IPSTATUS
 {

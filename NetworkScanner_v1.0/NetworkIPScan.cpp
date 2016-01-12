@@ -19,9 +19,6 @@ void CNetworkIPScan::InitializeAll()
 }
 
 // ½ºÄµ ½ÃÀÛ
-
-
-
 void CNetworkIPScan::Scan(int nicindex)
 {
 	// socket open
