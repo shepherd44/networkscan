@@ -1,73 +1,86 @@
 #include "NICInfoList.h"
 
+void CNICInfoList::AddItem(shared_ptr<NICInfo> spNICInfo)
+{
+	m_List.push_back(spNICInfo);
+}
+
 void CNICInfoList::AddItem(const char *name, const char *des, uint32_t netmask, uint32_t gatewayip, uint32_t ip, const uint8_t *mac)
 {
-	int len = 0;
-	NICInfo *temp = new NICInfo;
-	memset(temp, 0, sizeof(NICInfo));
+	shared_ptr<NICInfo> temp(new NICInfo);
 	// 리스트에 삽입
-	ListAddTail(&temp->list, &m_ListHead);
+	m_List.push_back(temp);
 	
 	// 값 셋팅
-	len = strlen(name) + 1;
-	temp->AdapterName = new char[len];
-	memcpy(temp->AdapterName, name, len);
-
-	len = strlen(des) + 1;
-	temp->Description = new char[len];
-	memcpy(temp->Description, des, len);
-
+	temp->AdapterName = name;
+	temp->Description = des;
 	temp->Netmask = netmask;
 	temp->GatewayIPAddress = gatewayip;
 	temp->NICIPAddress = ip;
-	
 	memcpy(temp->NICMACAddress, mac, MACADDRESS_LENGTH);
-
-	// 리스트 사이즈 증가
-	m_ListSize++;
 }
 
 int CNICInfoList::IsInItem(const char *name)
 {
 	int ret = 0;
-	PListHead ph = m_ListHead.next;
-	NICInfo *item;
-	for (; ph != &m_ListHead; ph = ph->next, ret++)
+
+	it_NICInfo bi, ei;
+	bi = m_List.begin();
+	ei = m_List.end();
+
+	shared_ptr<NICInfo> item;
+	for (; bi != ei; bi++)
 	{
-		item = (NICInfo *)GET_LIST_ITEM(ph, NICInfo, list);
-		if (strcmp(item->AdapterName, name) == 0)
+		item = *bi;
+		if (strcmp(item->AdapterName.data(), name) == 0)
 			return ret;
+		ret++;
 	}
 	return -1;
 }
 
-void CNICInfoList::RemoveItem(PListHead ph)
+void CNICInfoList::RemoveItem(shared_ptr<NICInfo> spNICInfo)
 {
-	ListDelete(ph);
-	NICInfo *item = GET_LIST_ITEM(ph, NICInfo, list);
-	delete(item->Description);
-	delete(item->AdapterName);
-	delete(item);
-	m_ListSize--;
+	it_NICInfo bi, ei;
+	bi = m_List.begin();
+	ei = m_List.end();
+	
+	shared_ptr<NICInfo> item;
+	for (; bi != ei; bi++)
+	{
+		item = *bi;
+		if (strcmp(item->AdapterName.data(), spNICInfo->AdapterName.data()) == 0)
+		{
+			m_List.erase(bi);
+			bi = m_List.begin();
+			ei = m_List.end();
+		}
+	}
 }
 
 void CNICInfoList::ClearList()
 {
-	PListHead ph = m_ListHead.next;
-	for (; ph != &m_ListHead; ph = m_ListHead.next)
-	{
-		RemoveItem(ph);
-	}
-
+	m_List.clear();
 }
 
 // index는 0부터, last item index == size - 1
-NICInfo* CNICInfoList::At(int index)
+shared_ptr<NICInfo> CNICInfoList::At(int index)
 {
-	if (index >= m_ListSize)
-		return NULL;
-	PListHead hp = m_ListHead.next;
+	if (index >= (int)m_List.size())
+		return nullptr;
+	it_NICInfo bi;
+	bi = m_List.begin();
+	
+	shared_ptr<NICInfo> item;
 	for (int i = 0; i < index; i++)
-		hp = hp->next;
-	return GET_LIST_ITEM(hp, NICInfo, list);
+	{
+		bi++;
+	}
+	item = *bi;
+	return item;
+}
+
+int CNICInfoList::GetSize()
+{
+	return m_List.size();
 }

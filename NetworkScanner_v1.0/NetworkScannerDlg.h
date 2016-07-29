@@ -19,18 +19,6 @@
 #define LIST_COLUMN_LENGTH	120		// 리스트 컨트롤 컬럼 길이
 #define LIST_COLUMN_NUMBER_LENGTH		40
 #endif
-// 리스트 컨트롤 컬럼 스트링 선언 매크로
-
-#define LISTCTRL_COULMNSTRING__	static wchar_t *ListCtrlColumnString[] = {	\
-														_T("No"),			\
-														_T("IP Address"),	\
-														_T("MAC Address"),	\
-														_T("Ping Send Time"),	\
-														_T("Ping Recv Time"),	\
-														_T("IP Status"),	\
-													}
-#define LISTCTRL_COULMNSTRING_			ListCtrlColumnString
-#define LISTCTRL_COULMNSTRING(index)	ListCtrlColumnString[index]
 
 // IPSTATUSINFO 셀 배경색 선언 매크로
 // IPSTATUS 열거형 순서대로
@@ -132,16 +120,19 @@ public:
 
 	// 리스트 컨트롤 변수 및 함수
 	CListCtrl m_ListCtrlScanResult;
+	vector<bool> m_VectorColumnDirection;
 	// 리스트 컨트롤 유저 지정 통지 함수
 	afx_msg void OnListIPStatusCustomdraw(NMHDR* pNMHDR, LRESULT* pResult);
 	// 오너드로우
 	afx_msg void OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *pResult);
 	// 리스트 컨트롤 초기화 함수
 	void ListCtrlInit();
-	// 체크박스로 체크된 항목 가져오기
+	// 체크박스로 체크된 항목 가져오기(미구현)
 	int *GetCheckedItem();
 	// 리스트 컨트롤 업데이트 쓰레드 상태 확인
 	bool IsListUpdateThreadDye() { return m_IsListUpdateThreadDye; }
+	// 리스트 컨트롤 헤더 클릭 처리함수
+	void OnHdnItemClick(NMHDR*, LRESULT*);
 
 	// 아이피 입력 컨트롤 변수 및 함수
 	CIPAddressCtrl m_IPAddrCtrlBeginIP;
@@ -176,4 +167,6 @@ public:
 	
 	void ViewUpdate();
 	void UpdateListCtrl(int index);
+	afx_msg void OnBnClickedBtnScanIPAddFromExcel();
+	afx_msg void OnBnClickedBtnScanExportip();
 };

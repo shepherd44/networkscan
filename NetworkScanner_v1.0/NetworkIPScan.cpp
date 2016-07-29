@@ -13,7 +13,13 @@ CNetworkIPScan::~CNetworkIPScan()
 void CNetworkIPScan::InitializeAll()
 {
 	m_SendInterval = 1000;
-	m_SendSock.FindNetDevice();
+	try
+	{
+		m_SendSock.FindNetDevice();
+	}
+	catch (std::exception& e)
+	{
+	}
 	m_hCaptureThread = NULL;
 	m_hSendThread = NULL;
 }
@@ -28,13 +34,14 @@ void CNetworkIPScan::Scan(int nicindex)
 	m_SendSock.OpenNetDevice(nicindex);
 	m_CaptureSock.OpenNetDevice(m_SendSock.GetCurrentSelectNICName());
 	// 캡처소켓 필터 셋팅
-	m_CaptureSock.SetPacketFilter("arp or icmp");
+	//m_CaptureSock.SetPacketFilter("arp or icmp");
+	m_CaptureSock.SetPacketFilter("icmp");
 	
 
 	// 내 PC IP 상태 처리
 	NICInfo *nicinfo = const_cast<NICInfo *>(m_SendSock.GetCurrentSelectNICInfo());
 	int index = m_IPStatInfoList.IsInItem(nicinfo->NICIPAddress);
-	IPStatusInfo* ipstat;
+	shared_ptr<IPStatusInfo> ipstat;
 	if (index != -1)
 	{
 		ipstat = m_IPStatInfoList.GetItem(index);
@@ -86,7 +93,7 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 	CWPcapSendSocket *sendsock = scanner->GetSendSocket();
 	bool *isdye = (bool *)&scanner->m_IsSendThreadDye;
 	CIPStatusList *iplist = (CIPStatusList *)scanner->GetIpStatusList();
-	IPStatusInfo *ipstat = NULL;
+	shared_ptr<IPStatusInfo> ipstat = NULL;
 
 	// 네트워크 주소 계산
 	NICInfo *nicinfo = const_cast<NICInfo *>(sendsock->GetCurrentSelectNICInfo());
@@ -102,47 +109,25 @@ UINT AFX_CDECL CNetworkIPScan::SendThreadFunc(LPVOID lpParam)
 	
 	while (!*isdye)
 	{
-		// 프로그램 상태바 업데이트
-		maindlg->SetProgramState(SCANNIG_STATE::SCANNING_ARPSEND);
 		int size = iplist->GetSize();
 		int i = 0;
-		// ARP 전송
-		for (; i < size; i++)
-		{
-			// 스레드 종료 확인
-			if (*isdye)
-				return 0;
-			ipstat = iplist->GetItem(i);
-			ip = ipstat->IPAddress;
-			hip = ntohl(ip);
-			if (hip >= hstartnetwork && hip <= hendnetwork)
-			{
-				gettimeofday(&now, NULL);
-				sendsock->SendARPRequest(ip);
-				ipstat->LastARPSendTime = now;
-			}
-		}
 
-		// ARP 보낸 뒤 대기
-		for (i = 0; i < scanner->GetSendInterval() / 10; i++)
-		{
-			if (*isdye)
-				return 0;
-			Sleep(10);
-		}
+		// Ping 전송 상태바 업데이트
 		maindlg->SetProgramState(SCANNIG_STATE::SCANNING_PINGSEND);
 
+		// Ping 전송
 		for (i = 0; i < size; i++)
 		{
 			// 스레드 종료 확인
 			if (*isdye)
 				return 0;
+
 			iplist->Lock(INFINITE);
 			ipstat = iplist->GetItem(i);
 			ip = ipstat->IPAddress;
 			iplist->Unlock();
-			hip = ntohl(ip);
 
+			hip = ntohl(ip);
 			gettimeofday(&now, NULL);
 			sendsock->SendICMPV4ECHORequest(ip);
 			ipstat->LastPingSendTime = now;
@@ -209,9 +194,9 @@ void CNetworkIPScan::Analyze(const uint8_t *param, const uint8_t *packet, const 
 	ETHHeader *ethh = (ETHHeader *)packet;
 	switch (ntohs(ethh->prototype))
 	{
-	case ETHTYPE::ARP:
-		ARPAnalyze(ipstatlist, capsock, const_cast<uint8_t *>(packet), pkthdr);
-		break;
+	//case ETHTYPE::ARP:
+	//	ARPAnalyze(ipstatlist, capsock, const_cast<uint8_t *>(packet), pkthdr);
+	//	break;
 	case ETHTYPE::IPV4:
 		IPAnalyze(ipstatlist, capsock, const_cast<uint8_t *>(packet), pkthdr);
 		break;
@@ -231,7 +216,7 @@ void CNetworkIPScan::ARPAnalyze(CIPStatusList *ipstatlist, CWPcapCaptureSocket *
 	uint8_t mac[MACADDRESS_LENGTH] = { 0, };
 
 	// 스캔 범위 내의 ip인지 확인한다.
-	IPStatusInfo *ipstat;
+	shared_ptr<IPStatusInfo> ipstat;
 	memcpy(&senderip, arpp->spaddr, IPV4ADDRESS_LENGTH);
 	index = ipstatlist->IsInItem(senderip);
 	if (index == -1)
@@ -336,7 +321,7 @@ void CNetworkIPScan::ICMPAnalyze(CIPStatusList *ipstatlist, CWPcapCaptureSocket 
 
 	uint32_t ip;
 	int index;
-	IPStatusInfo *ipinfo;
+	shared_ptr<IPStatusInfo> ipinfo;
 	IPSTATUS status;
 
 	memcpy(&ip, iph->srcaddr, IPV4ADDRESS_LENGTH);
@@ -436,19 +421,42 @@ void CNetworkIPScan::IPStatusListInsertItem(uint32_t hbeginip, uint32_t hendip)
 			continue;
 		else
 		{
-			IPStatusInfo ipinfo;
-			memset(&ipinfo, 0, sizeof(IPStatusInfo));
-			ipinfo.DoARPPingSend = true;
-			ipinfo.DoIPPingSend = true;
-			ipinfo.IPAddress = htonl(hbeginip);
-			memcpy(ipinfo.MACAddress, mac, MACADDRESS_LENGTH);
-			ipinfo.IPStatus = IPSTATUS::NOTUSING;
-			ipinfo.PingReply = false;
+			shared_ptr<IPStatusInfo> ipinfo(new IPStatusInfo);
+			memset(ipinfo.get(), 0, sizeof(IPStatusInfo));
+			ipinfo->DoARPPingSend = true;
+			ipinfo->DoIPPingSend = true;
+			ipinfo->IPAddress = htonl(hbeginip);
+			memcpy(ipinfo->MACAddress, mac, MACADDRESS_LENGTH);
+			ipinfo->IPStatus = IPSTATUS::NOTUSING;
+			ipinfo->PingReply = false;
 
 			/*m_IPStatInfoList.InsertItem(index, &ipinfo);*/
-			m_IPStatInfoList.AddItem(&ipinfo);
+			m_IPStatInfoList.AddItem(ipinfo);
 
 		}
+	}
+}
+
+void CNetworkIPScan::IPStatusListInsertItem(uint32_t hip)
+{
+	int size = m_IPStatInfoList.GetSize();
+	uint8_t mac[MACADDRESS_LENGTH] = { 0, };
+	
+	int index = m_IPStatInfoList.SearchItemIndex(htonl(hip));
+	if (index == -1)
+		return;
+	else
+	{
+		shared_ptr<IPStatusInfo> ipinfo(new IPStatusInfo);
+		memset(ipinfo.get(), 0, sizeof(IPStatusInfo));
+		ipinfo->DoARPPingSend = true;
+		ipinfo->DoIPPingSend = true;
+		ipinfo->IPAddress = htonl(hip);
+		memcpy(ipinfo->MACAddress, mac, MACADDRESS_LENGTH);
+		ipinfo->IPStatus = IPSTATUS::NOTUSING;
+		ipinfo->PingReply = false;
+
+		m_IPStatInfoList.AddItem(ipinfo);
 	}
 }
 

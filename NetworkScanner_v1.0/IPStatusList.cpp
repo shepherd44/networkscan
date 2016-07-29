@@ -4,9 +4,7 @@
 
 CIPStatusList::CIPStatusList()
 {
-	m_ListSize = 0;
 	m_ListMutex = CreateMutex(NULL, FALSE, NULL);
-	m_ListHead = LIST_HEAD_INIT(m_ListHead);
 }
 
 
@@ -16,62 +14,49 @@ CIPStatusList::~CIPStatusList()
 	CloseHandle(m_ListMutex);
 }
 
-void CIPStatusList::AddItem(IPStatusInfo *ipinfo)
+void CIPStatusList::AddItem(shared_ptr<IPStatusInfo> ipinfo)
 {
 	if (!Lock(INFINITE))
 		return;
-	IPStatusInfo *temp = new IPStatusInfo;
-	memcpy(temp, ipinfo, sizeof(IPStatusInfo));
-	if (ipinfo->DuplicationMACCount > 0)
-	{
-		temp->DuplicationMAC = new MACAddr[ipinfo->DuplicationMACCount];
-		memcpy(temp->DuplicationMAC, ipinfo->DuplicationMAC, sizeof(MACAddr) * ipinfo->DuplicationMACCount);
-	}
+	
 	// 리스트에 삽입
-	ListAddTail(&temp->list, &m_ListHead);
-	// 리스트 사이즈 증가
-	m_ListSize++;
+	m_ListHead.push_back(ipinfo);
+	
 	Unlock();
 }
 
-void CIPStatusList::InsertItem(int index, IPStatusInfo *ipinfo)
+void CIPStatusList::InsertItem(int index, shared_ptr<IPStatusInfo> ipinfo)
 {
 	if (!Lock(INFINITE))
 		return;
-	PListHead lh;
+	list< shared_ptr<IPStatusInfo> >::iterator bi = m_ListHead.begin();
 
-	if (index > m_ListSize)
+	if (index > (int)m_ListHead.size())
 		return;
 	else
 	{
-		lh = &m_ListHead;
 		for (int i = 0; i < index; i++)
-			lh = lh->next;
+			bi++;
 	}
 
-	IPStatusInfo *temp = new IPStatusInfo;
-	memcpy(temp, ipinfo, sizeof(IPStatusInfo));
-	if (ipinfo->DuplicationMACCount > 0)
-	{
-		temp->DuplicationMAC = new MACAddr[ipinfo->DuplicationMACCount];
-		memcpy(temp->DuplicationMAC, ipinfo->DuplicationMAC, sizeof(MACAddr) * ipinfo->DuplicationMACCount);
-	}
 	// 리스트에 삽입
-	ListAdd(&temp->list, lh);
-	// 리스트 사이즈 증가
-	m_ListSize++;
-
+	m_ListHead.insert(bi, ipinfo);
+	
 	Unlock();
 }
 
 int CIPStatusList::SearchItemIndex(uint32_t ip)
 {
 	int ret = 0;
-	PListHead ph = m_ListHead.next;
+
+	list< shared_ptr<IPStatusInfo> >::iterator bi = m_ListHead.begin();
+	list< shared_ptr<IPStatusInfo> >::iterator ei = m_ListHead.end();
+	shared_ptr<IPStatusInfo> item;
 	uint32_t itemip;
-	for (; ph != &m_ListHead; ph = ph->next, ret++)
+	for (; bi != ei; bi++, ret++)
 	{
-		itemip = GET_LIST_ITEM(ph, IPStatusInfo, list)->IPAddress;
+		item = *bi;
+		itemip = item->IPAddress;
 		if (itemip == ip)
 			return -1;
 		if (ntohl(itemip) > ntohl(ip))
@@ -84,29 +69,19 @@ int CIPStatusList::SearchItemIndex(uint32_t ip)
 int CIPStatusList::IsInItem(uint32_t ip)
 {
 	int ret = 0;
-	PListHead ph = m_ListHead.next;
+	list< shared_ptr<IPStatusInfo> >::iterator bi = m_ListHead.begin();
+	list< shared_ptr<IPStatusInfo> >::iterator ei = m_ListHead.end();
+	shared_ptr<IPStatusInfo> item;
 	uint32_t itemip;
-	for (; ph != &m_ListHead; ph = ph->next, ret++)
+
+	for (; bi != ei; bi++, ret++)
 	{
-		itemip = GET_LIST_ITEM(ph, IPStatusInfo, list)->IPAddress;
+		item = *bi;
+		itemip = item->IPAddress;
 		if (itemip == ip)
 			return ret;
 	}
 	return -1;
-}
-
-// 아이템 삭제
-void CIPStatusList::RemoveItem(PListHead ph)
-{
-	if (!Lock(INFINITE))
-		return;
-	ListDelete(ph);
-	IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
-	if (item->DuplicationMAC != NULL)
-		delete []item->DuplicationMAC;
-	delete(item);
-	m_ListSize--;
-	Unlock();
 }
 
 void CIPStatusList::RemoveItem(int index)
@@ -114,17 +89,16 @@ void CIPStatusList::RemoveItem(int index)
 	if (!Lock(INFINITE))
 		return;
 
-	PListHead ph = m_ListHead.next;
-	for (int i = 0; i < index; i++)
-		ph = ph->next;
+	if (index >= (int)m_ListHead.size())
+		return;
 
-	ListDelete(ph);
-	IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
-	if (item->DuplicationMAC != NULL)
-		delete []item->DuplicationMAC;
-	delete(item);
-	m_ListSize--;
-	
+	list< shared_ptr<IPStatusInfo> >::iterator bi = m_ListHead.begin();
+
+	for (int i = 0; i < index; i++)
+		bi++;
+		
+	m_ListHead.erase(bi);
+		
 	Unlock();
 }
 
@@ -132,27 +106,44 @@ void CIPStatusList::ClearList()
 {
 	if (!Lock(INFINITE))
 		return;
-	PListHead ph = m_ListHead.next;
-	for (; ph != &m_ListHead; ph = m_ListHead.next)
-	{
-		ListDelete(ph);
-		IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
-		if (item->DuplicationMAC != NULL)
-			delete []item->DuplicationMAC;
-		delete(item);
-		m_ListSize--;
-	}
+	m_ListHead.clear();
 	Unlock();
 }
+
+void CIPStatusList::Sort(int col, bool dir)
+{
+	switch (col)
+	{
+	case 1:	// IP Address 기준 정렬
+		if (dir)
+			m_ListHead.sort(IPStatusInfoSort<1,true>());
+		else
+			m_ListHead.sort(IPStatusInfoSort<1,false>());
+		break;
+	case 5:	// IP Status 기준 정렬
+		if (dir)
+			m_ListHead.sort(IPStatusInfoSort<5, true>());
+		else
+			m_ListHead.sort(IPStatusInfoSort<5, false>());
+		break;
+	default:
+		break;
+	}
+	
+};
 
 void CIPStatusList::ListInitForScan()
 {
 	if (!Lock(INFINITE))
 		return;
-	PListHead ph = m_ListHead.next;
-	for (; ph != &m_ListHead; ph = ph->next)
+	
+	list< shared_ptr<IPStatusInfo> >::iterator bi = m_ListHead.begin();
+	list< shared_ptr<IPStatusInfo> >::iterator ei = m_ListHead.end();
+	shared_ptr<IPStatusInfo> item;
+	
+	for (; bi != ei; bi++)
 	{
-		IPStatusInfo *item = GET_LIST_ITEM(ph, IPStatusInfo, list);
+		item = *bi;
 		// 해당 item 초기화
 		// 초기화 제외 목록: ipaddredd, dopingsend, doarpsend, list
 		memset(item->MACAddress, 0, sizeof(timeval));
@@ -161,31 +152,38 @@ void CIPStatusList::ListInitForScan()
 		memset(&item->LastARPSendTime, 0, sizeof(timeval));
 		memset(&item->LastPingRecvTime, 0, sizeof(timeval));
 		memset(&item->LastPingSendTime, 0, sizeof(timeval));
-		
+
 		if (item->DuplicationMAC != NULL)
-			delete []item->DuplicationMAC;
+			delete[]item->DuplicationMAC;
 		item->DuplicationMACCount = 0;
 	}
+
 	Unlock();
 }
 
-IPStatusInfo* CIPStatusList::GetItem(int index)
+shared_ptr<IPStatusInfo> CIPStatusList::GetItem(int index)
 {
 	if (!Lock(INFINITE))
 		return NULL;
-	IPStatusInfo* itemtemp = At(index);
+	shared_ptr<IPStatusInfo> itemtemp = At(index);
 	Unlock();
 	return itemtemp;
 }
 
-IPStatusInfo* CIPStatusList::At(int index)
+shared_ptr<IPStatusInfo> CIPStatusList::At(int index)
 {
-	if (index >= m_ListSize)
+	if (index >= (int)m_ListHead.size())
 		return NULL;
-	PListHead hp = m_ListHead.next;
+
+	list< shared_ptr<IPStatusInfo> >::iterator bi = m_ListHead.begin();
+	list< shared_ptr<IPStatusInfo> >::iterator ei = m_ListHead.end();
+	shared_ptr<IPStatusInfo> item;
+
 	for (int i = 0; i < index; i++)
-		hp = hp->next;
-	return GET_LIST_ITEM(hp, IPStatusInfo, list);
+		bi++;
+	item = *bi;
+
+	return item;
 }
 
 BOOL CIPStatusList::Lock(DWORD timeout)

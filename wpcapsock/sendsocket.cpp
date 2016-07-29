@@ -111,7 +111,7 @@ void CWPcapSendSocket::SetARPRequest(uint8_t *out, uint8_t *srcmac, uint8_t *src
 }
 int CWPcapSendSocket::SendARPRequest(uint32_t dstip)
 {
-	NICInfo *NICInfo = m_NICInfoList.At(m_CurSel);
+	shared_ptr<NICInfo> spNICInfo = m_NICInfoList.At(m_CurSel);
 	uint8_t ethframe[ARPMESSAGE_LENGTH];
 	uint8_t dstmac[MACADDRESS_LENGTH];
 	memset(ethframe, 0, ARPMESSAGE_LENGTH);
@@ -119,13 +119,13 @@ int CWPcapSendSocket::SendARPRequest(uint32_t dstip)
 	// 브로드 캐스팅 주소 셋팅
 	memset(dstmac, 0xff, MACADDRESS_LENGTH);
 	// 이더넷 프레임 헤더 셋팅
-	SetETHHeader(ethframe, dstmac, NICInfo->NICMACAddress, htons(ETHTYPE::ARP));
+	SetETHHeader(ethframe, dstmac, spNICInfo->NICMACAddress, htons(ETHTYPE::ARP));
 	// 빈 주소 셋팅
 	memset(dstmac, 0x00, MACADDRESS_LENGTH);
 	// ARP 패킷 셋팅
 	SetARPRequest(ethframe + ETHERNETHEADER_LENGTH,
-		NICInfo->NICMACAddress,
-		(uint8_t*)&NICInfo->NICIPAddress,
+		spNICInfo->NICMACAddress,
+		(uint8_t*)&spNICInfo->NICIPAddress,
 		dstmac,
 		(uint8_t *)(&dstip),
 		htons(ARPOPCODE::ARPREQUEST));
@@ -250,7 +250,7 @@ int CWPcapSendSocket::GetARPTable(PMIB_IPNETTABLE *pmib)
 
 int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 {
-	NICInfo *nicinfo = m_NICInfoList.At(m_CurSel);
+	shared_ptr<NICInfo> spNICInfo = m_NICInfoList.At(m_CurSel);
 	uint16_t packetlen = ICMPV4ECHO_LENGTH + IPV4HEADER_BASICLENGTH + ETHERNETHEADER_LENGTH;
 	uint8_t *packet = (uint8_t *)malloc(packetlen);
 	memset(packet, 0, packetlen);
@@ -269,7 +269,7 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 	uint8_t *pip = packet + ETHERNETHEADER_LENGTH;
 	datalen += ICMPV4HEADER_LENGTH;
 	SetIPPacket(pip, IPV4HEADER_BASICLENGTH, 0x3713, 0x0000,
-		128, IPV4TYPE::ICMP, true, (uint8_t *)&nicinfo->NICIPAddress,
+		128, IPV4TYPE::ICMP, true, (uint8_t *)&spNICInfo->NICIPAddress,
 		(uint8_t *)&dstip, (uint8_t *)picmp, datalen);
 
 	// 이더넷 헤더 셋팅 Window ARP table 사용버전
@@ -287,7 +287,7 @@ int CWPcapSendSocket::SendICMPV4ECHORequest(uint32_t dstip)
 	for (DWORD i = 0; i < pMib->dwNumEntries; i++)
 		if (pMib->table[i].dwAddr == m_NICInfoList.At(m_CurSel)->GatewayIPAddress)
 			memcpy(dstmac, pMib->table[i].bPhysAddr, pMib->table[i].dwPhysAddrLen);
-	SetETHHeader(packet, dstmac, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4));
+	SetETHHeader(packet, dstmac, spNICInfo->NICMACAddress, htons(ETHTYPE::IPV4));
 	free(pMib);
 	
 
@@ -314,11 +314,11 @@ void CWPcapSendSocket::SetICMPV4Packet(uint8_t *out, uint8_t type, uint8_t code,
 
 bool CWPcapSendSocket::IsInNet(uint32_t ip)
 {
-	NICInfo *NICInfo = m_NICInfoList.At(m_CurSel);
-	if (NICInfo == NULL)
+	shared_ptr<NICInfo> spNICInfo = m_NICInfoList.At(m_CurSel);
+	if (spNICInfo == nullptr)
 		throw WPcapSocketException("This Socket is not open.");
-	uint32_t netmask = NICInfo->Netmask;
-	uint32_t nicip = NICInfo->NICIPAddress;
+	uint32_t netmask = spNICInfo->Netmask;
+	uint32_t nicip = spNICInfo->NICIPAddress;
 	uint32_t net = nicip & netmask;
 
 	ip = ntohl(ip);
@@ -330,7 +330,7 @@ bool CWPcapSendSocket::IsInNet(uint32_t ip)
 
 int CWPcapSendSocket::SendUDP(uint32_t dstip, uint16_t dstport, uint16_t srcport, uint8_t *data, uint16_t datalen)
 {
-	NICInfo *nicinfo = m_NICInfoList.At(m_CurSel);
+	shared_ptr<NICInfo> spNICInfo = m_NICInfoList.At(m_CurSel);
 	uint16_t packetlen = UDPHEADER_LENGTH + IPV4HEADER_BASICLENGTH + ETHERNETHEADER_LENGTH;
 	uint8_t *packet = (uint8_t *)malloc(packetlen);
 	memset(packet, 0, packetlen);
@@ -339,7 +339,7 @@ int CWPcapSendSocket::SendUDP(uint32_t dstip, uint16_t dstport, uint16_t srcport
 	uint16_t i = 0;
 
 	// UDP 헤더 셋팅
-	SetUDP(packet, nicinfo->NICIPAddress, dstip, srcport, dstport, data, datalen);
+	SetUDP(packet, spNICInfo->NICIPAddress, dstip, srcport, dstport, data, datalen);
 
 	// IP 헤더 셋팅
 	uint8_t *pip = packet + ETHERNETHEADER_LENGTH;
@@ -352,14 +352,14 @@ int CWPcapSendSocket::SendUDP(uint32_t dstip, uint16_t dstport, uint16_t srcport
 		128,		// ttl
 		IPV4TYPE::UDP,	// protocol type
 		true,			// 체크섬 계산 여부
-		(uint8_t *)&nicinfo->NICIPAddress,	
+		(uint8_t *)&spNICInfo->NICIPAddress,
 		(uint8_t *)&dstip,
 		(uint8_t *)pudp,
 		datalen			// 데이터 길이
 		);	
 
 	// 이더넷 헤더 셋팅
-	SetETHHeaderWithARP(packet, nicinfo->NICMACAddress, htons(ETHTYPE::IPV4), dstip);
+	SetETHHeaderWithARP(packet, spNICInfo->NICMACAddress, htons(ETHTYPE::IPV4), dstip);
 	// 패킷 전송
 	int ret = SendPacket(packet, packetlen);
 	return ret;

@@ -14,7 +14,7 @@ int CWPcapCaptureSocket::SetPacketFilter(const char* filter)
 	struct bpf_program filtercode;
 	if (pcap_compile(m_pCapHandler, &filtercode, filter, 1, 0xffffffff) < 0)
 	{
-		strcpy(m_ErrBuffer, pcap_geterr(m_pCapHandler));
+		strcpy_s(m_ErrBuffer, pcap_geterr(m_pCapHandler));
 		throw WPcapSocketException(m_ErrBuffer);
 	}
 	

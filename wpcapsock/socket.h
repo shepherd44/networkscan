@@ -15,6 +15,7 @@
 #include "NICInfoList.h"
 
 //#pragma comment(lib, "wpcap.lib")
+//#pragma comment(lib, "packet.lib")
 #pragma comment(lib, "iphlpapi.lib")	// 맥 어드레스 얻기 위해 사용
 #pragma comment(lib, "ws2_32.lib")		// iphlpapi 사용
 
@@ -55,7 +56,7 @@ public:
 	const NICInfo *GetCurrentSelectNICInfo();
 	// 현재 선택된 NIC 이름 가져오기
 	// 선택된 NIC가 없으면 NULL 반환
-	char *GetCurrentSelectNICName();
+	const char *GetCurrentSelectNICName();
 	// 에러 버퍼 가져오기
 	const char* GetErrorBuffer();
 	// NIC정보 리스트 반환

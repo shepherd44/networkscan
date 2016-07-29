@@ -76,6 +76,10 @@ BEGIN_MESSAGE_MAP(CNetworkScannerDlg, CDialogEx)
 	ON_WM_CLOSE()
 	ON_NOTIFY(LVN_GETDISPINFO, IDC_LIST_SCANRESULT, &CNetworkScannerDlg::OnLvnGetdispinfoListScanresult)
 	ON_BN_CLICKED(IDC_CHECK_HIDEDEADIP, &CNetworkScannerDlg::OnBnClickedCheckHidedeadip)
+	ON_BN_CLICKED(IDC_BTN_SCAN_ADDIPFROMEXECL, &CNetworkScannerDlg::OnBnClickedBtnScanIPAddFromExcel)
+	ON_BN_CLICKED(IDC_BTN_SCAN_EXPORTIP, &CNetworkScannerDlg::OnBnClickedBtnScanExportip)
+	ON_NOTIFY(HDN_ITEMCLICKA, 0, &CNetworkScannerDlg::OnHdnItemClick)
+	ON_NOTIFY(HDN_ITEMCLICKW, 0, &CNetworkScannerDlg::OnHdnItemClick)
 END_MESSAGE_MAP()
 
 
@@ -220,6 +224,8 @@ void CNetworkScannerDlg::OnBnClickedBtnStopAll()
 	m_ComboCtrlNICInfo.EnableWindow(TRUE);
 	// 리스트 내용 초기화
 	m_NetworkIPScan.GetIpStatusList()->ListInitForScan();
+
+	ViewUpdate();
 }
 void CNetworkScannerDlg::OnBnClickedBtnStopSend()
 {
@@ -305,14 +311,14 @@ void CNetworkScannerDlg::InitializeAll()
 void CNetworkScannerDlg::ComboBoxInit()
 {
 	CNICInfoList *nicinfolist = m_NetworkIPScan.GetNicInfoList();
-	NICInfo *nicinfo;
+	shared_ptr<NICInfo> nicinfo;
 	int size = nicinfolist->GetSize();
 	char des[256];
 	for (int i = 0; i < size; i++)
 	{
 		nicinfo = nicinfolist->At(i);
 		memset(des, '\0', 256);
-		memcpy(des, nicinfo->Description, strlen(nicinfo->Description));
+		memcpy(des, nicinfo->Description.data(), strlen(nicinfo->Description.data()));
 		m_ComboCtrlNICInfo.AddString(CString(des));
 	}
 	
@@ -325,10 +331,21 @@ void CNetworkScannerDlg::IPAddrCtrlInit()
 	u_long beginip, endip;
 
 	CNICInfoList *list = m_NetworkIPScan.GetNicInfoList();
-	NICInfo *nicinfo = list->At(m_ComboCtrlNICInfo.GetCurSel());
-	nicip = nicinfo->NICIPAddress;
-	nicnetmask = nicinfo->Netmask;
-	nichostmask = nicnetmask ^ 0xffffffff;
+	int index = m_ComboCtrlNICInfo.GetCurSel();
+	shared_ptr<NICInfo> nicinfo = list->At((index == -1) ? 1 : index);
+	if (nicinfo != nullptr)
+	{
+		nicip = nicinfo->NICIPAddress;
+		nicnetmask = nicinfo->Netmask;
+		nichostmask = nicnetmask ^ 0xffffffff;
+	}
+	else
+	{
+		nicip = 0;
+		nicnetmask = 0;
+		nichostmask = nicnetmask ^ 0xffffffff;
+	}
+	
 
 	// 네트워크 대역 검사
 	beginip = nicip & nicnetmask;
@@ -351,17 +368,28 @@ void CNetworkScannerDlg::IPAddrCtrlInit()
 // 리스트 컨트롤 초기화
 void CNetworkScannerDlg::ListCtrlInit()
 {
-	LISTCTRL_COULMNSTRING__;	// static wchar_t *ListCtrlColumnString[] 선언
+	static wchar_t *ListCtrlColumnString[] = {
+		_T("No"),
+		_T("IP Address"),
+		_T("MAC Address"),
+		_T("Ping Send Time"),
+		_T("Ping Recv Time"),
+		_T("IP Status"),
+	};
 	
+	// View 스타일 설정
 //	ListView_SetExtendedListViewStyle(m_ListCtrlScanResult.m_hWnd, LVS_EX_DOUBLEBUFFER| LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES | LVS_EX_GRIDLINES);
 	ListView_SetExtendedListViewStyle(m_ListCtrlScanResult.m_hWnd, LVS_EX_DOUBLEBUFFER | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
 	// 열 설정
-	int i = 0, size = sizeof(LISTCTRL_COULMNSTRING_) / sizeof(wchar_t*);
+	int i = 0, size = sizeof(ListCtrlColumnString) / sizeof(wchar_t*);
 	//m_ListCtrlScanResult.InsertColumn(i, LISTCTRL_COULMNSTRING(i++), LVCFMT_LEFT, 0, -1);
-	m_ListCtrlScanResult.InsertColumn(i, LISTCTRL_COULMNSTRING(i++), LVCFMT_LEFT, LIST_COLUMN_NUMBER_LENGTH, -1);
+	m_ListCtrlScanResult.InsertColumn(i, ListCtrlColumnString[i++], LVCFMT_LEFT, LIST_COLUMN_NUMBER_LENGTH, -1);
 	for (; i < size; i++)
 		m_ListCtrlScanResult.InsertColumn(i, ListCtrlColumnString[i], LVCFMT_LEFT, LIST_COLUMN_LENGTH, -1);
+
+	// 정렬 방향 초기화
+	m_VectorColumnDirection.assign(size, false);
 }
 
 // 리스트 컨트롤 통지 함수(Customdraw)
@@ -378,7 +406,9 @@ afx_msg void CNetworkScannerDlg::OnListIPStatusCustomdraw(NMHDR* pNMHDR, LRESULT
 		int nItem = static_cast<int>(pLVCD->nmcd.dwItemSpec);
 		
 		// 색 지정
-		IPStatusInfo *item = m_ViewListBuffer.GetItem(nItem);
+		shared_ptr<IPStatusInfo> item = m_ViewListBuffer.GetItem(nItem);
+		if (item == nullptr)
+			return;
 		pLVCD->clrTextBk = IPSTATUS_CELLCOLOR(item->IPStatus);
 		*pResult = CDRF_DODEFAULT;
 	}
@@ -401,11 +431,13 @@ void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *
 	static uint8_t mactmp[6] = { 0, };
 
 	CString str;
-	IPStatusInfo *ipstat;
+	shared_ptr<IPStatusInfo> ipstat;
 	LV_ITEM* pItem = &(pDispInfo)->item;
 
 	int index = pItem->iItem;
 	ipstat = m_ViewListBuffer.GetItem(index);
+	if (ipstat == nullptr)
+		return;
 	
 	if (pItem->mask & LVIF_TEXT)
 	{
@@ -484,6 +516,24 @@ void CNetworkScannerDlg::OnLvnGetdispinfoListScanresult(NMHDR *pNMHDR, LRESULT *
 
 	}
 	*pResult = 0;
+}
+// 리스트 컨트롤 헤더 클릭 처리함수(정렬)
+void CNetworkScannerDlg::OnHdnItemClick(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMHEADER phdr = reinterpret_cast<LPNMHEADER>(pNMHDR);
+
+	int iSortColumn = phdr->iItem;
+	
+	CIPStatusList *captureitemlist = m_NetworkIPScan.GetIpStatusList();
+	if (captureitemlist->Lock(INFINITE))
+	{
+		captureitemlist->Sort(iSortColumn, m_VectorColumnDirection[iSortColumn]);
+		m_VectorColumnDirection[iSortColumn] = !m_VectorColumnDirection[iSortColumn];
+	}
+	captureitemlist->Unlock();
+
+	ViewUpdate();
+	return;
 }
 
 void CNetworkScannerDlg::StatusBarCtrlInit()
@@ -573,7 +623,7 @@ void CNetworkScannerDlg::OnClose()
 void CNetworkScannerDlg::ViewUpdate()
 {
 	CIPStatusList *captureitemlist = m_NetworkIPScan.GetIpStatusList();
-	IPStatusInfo *ipstat;
+	shared_ptr<IPStatusInfo> ipstat;
 	
 	m_ViewListBuffer.ClearList();
 	int size = captureitemlist->GetSize();
@@ -598,3 +648,93 @@ void CNetworkScannerDlg::OnBnClickedCheckHidedeadip()
 	m_ListCtrlScanResult.SetItemCount(m_ViewListBuffer.GetSize());
 }
 
+
+// IP Add From Excel 클릭 이벤트
+void CNetworkScannerDlg::OnBnClickedBtnScanIPAddFromExcel()
+{
+	LPCTSTR szFilter = _T("Excel (*.csv)|*.csv|");
+	CFileDialog dlg(true, L"csv", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST, szFilter, this);
+	CStdioFile csvFile;
+	if (IDOK == dlg.DoModal())
+	{
+		CString strPathName = dlg.GetPathName();
+		CString atrCheck = dlg.GetFileExt();
+		CString line;
+		if (atrCheck == _T("csv"))
+		{
+			if (!csvFile.Open(strPathName, CFile::modeNoTruncate | CFile::modeRead))
+			{
+				CString ErrMsg;
+				ErrMsg.Format(L"[%s] 파일이 없습니다.", strPathName);
+				MessageBox(ErrMsg);
+				return;
+			}
+
+			while (csvFile.ReadString(line))
+			{
+				// csv file line parse
+				int tok = line.Find(_T(","), 0);
+				if (tok != -1)
+					line = line.Left(tok);
+
+				// List Add
+				CW2AEX<256> WToA(line);
+				u_long hip = inet_addr(WToA);
+				hip = ntohl(inet_addr(WToA));
+				m_NetworkIPScan.IPStatusListInsertItem(hip);
+			}
+			csvFile.Close();
+		}
+		else
+		{
+			MessageBox(_T("Not *.csv file"));
+		}
+
+		CIPStatusList *iplist = m_NetworkIPScan.GetIpStatusList();
+		ViewUpdate();
+		int size = iplist->GetSize();
+		m_ListCtrlScanResult.SetItemCount(size);
+	}
+}
+
+void CNetworkScannerDlg::OnBnClickedBtnScanExportip()
+{
+	CIPStatusList *iplist = m_NetworkIPScan.GetIpStatusList();
+	LPCTSTR szFilter = _T("Excel (*.csv)|*.csv|");
+	CFileDialog dlg(false, L"csv", NULL, NULL, szFilter, this);
+	CStdioFile csvFile;
+
+	if (IDOK == dlg.DoModal())
+	{
+		CString strPathName = dlg.GetPathName();
+		CString extCheck = dlg.GetFileExt();
+		
+		if (extCheck == _T("csv"))
+		{
+			if (!csvFile.Open(strPathName, CFile::modeCreate | CFile::modeWrite))
+			{
+				MessageBox(_T("File Open Error"));
+				return;
+			}
+
+			int itemSize = iplist->GetSize();
+			shared_ptr<IPStatusInfo> item;
+			CString line;
+			in_addr ip;
+			for (int i = 0; i < itemSize; i++)
+			{
+				item = iplist->GetItem(i);
+				ip.s_addr = item->IPAddress;
+				CA2WEX<> tmp(inet_ntoa(ip));
+				line = tmp;
+				csvFile.WriteString(line);
+				csvFile.WriteString(L"\n");
+			}
+			csvFile.Close();
+		}
+		else
+		{
+			MessageBox(_T("Not *.csv file"));
+		}
+	}
+}

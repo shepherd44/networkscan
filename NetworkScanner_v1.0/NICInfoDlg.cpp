@@ -74,7 +74,7 @@ void CNICInfoDlg::ListCtrlNICInfoInit()
 	// nic list 가져오기: Network Scanner의 SendSocket을 이용
 	CNICInfoList *niclist = temp->m_NetworkIPScan.GetNicInfoList();
 
-	NICInfo *nicitem;
+	shared_ptr<NICInfo> nicitem;
 	CString str;
 	size = niclist->GetSize();
 	
@@ -89,7 +89,7 @@ void CNICInfoDlg::ListCtrlNICInfoInit()
 		// 1열
 		str.Format(_T("%d"), i + 1);
 		m_ListCtrlNICInfoList.InsertItem(i, str);
-		m_ListCtrlNICInfoList.SetItem(i, 1, LVIF_TEXT, CString(nicitem->Description), 0, 0, 0, NULL);
+		m_ListCtrlNICInfoList.SetItem(i, 1, LVIF_TEXT, CString(nicitem->Description.data()), 0, 0, 0, NULL);
 
 		// 2열
 		str.Format(_T("%d.%d.%d.%d"),

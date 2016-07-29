@@ -53,7 +53,7 @@ public:
 	void Scan(int nicindex);
 	// IP 범위만큼 ARP Request
 	// 반환값: 보낸 패킷수
-	int SendARP(u_long beginip, u_long end_ip);
+	//int SendARP(u_long beginip, u_long end_ip);
 
 	// 패킷 캡쳐 함수
 	// @ lpParam: 스레드 파라미터 전송
@@ -86,6 +86,7 @@ public:
 	CIPStatusList *GetIpStatusList() { return &m_IPStatInfoList; }
 	// IPStatusList 아이템 삽입( 중복 제거 및 순서대로)
 	void IPStatusListInsertItem(uint32_t hbeginip, uint32_t hendip);
+	void IPStatusListInsertItem(uint32_t);
 	void IPStatusListDeleteItem(int index);
 	
 	int GetSendInterval() { return m_SendInterval; }
